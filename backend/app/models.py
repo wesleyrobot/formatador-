@@ -51,6 +51,17 @@ class SessionContact(Base):
     contact = relationship("Contact", back_populates="sessions")
 
 
+class ErrorLog(Base):
+    __tablename__ = "error_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    method = Column(String(10))
+    endpoint = Column(String(200))
+    status_code = Column(Integer)
+    error_message = Column(Text)
+
+
 class MLStats(Base):
     __tablename__ = "ml_stats"
 

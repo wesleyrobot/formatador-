@@ -761,6 +761,50 @@ input:focus,select:focus{border-color:var(--g);box-shadow:0 0 8px rgba(0,255,65,
 .cwcard:hover{border-color:var(--g);color:var(--g);background:rgba(0,255,65,.03);}
 .cwcard strong{display:block;color:var(--text);margin-bottom:3px;font-size:10px;}
 
+/* ── MONITOR OVERLAY ── */
+.mon-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999;backdrop-filter:blur(2px);}
+.mon-overlay.open{display:flex;align-items:flex-start;justify-content:flex-end;}
+.mon-panel{background:var(--bg2);border:1px solid var(--border);border-radius:8px;width:520px;max-height:88vh;margin:20px 20px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 0 40px rgba(0,0,0,.6);}
+.mon-hdr{background:var(--bg3);padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.mon-title{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:2px;color:var(--g);flex:1;}
+.mon-close{background:none;border:none;color:var(--dim);cursor:pointer;padding:4px;}
+.mon-close:hover{color:var(--red);}
+.mon-body{padding:14px;overflow-y:auto;flex:1;}
+.mon-body::-webkit-scrollbar{width:3px;}
+.mon-body::-webkit-scrollbar-thumb{background:var(--border);}
+.mon-section{margin-bottom:16px;}
+.mon-slbl{font-size:9px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+.mon-checks{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.mon-chk{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:8px 12px;font-size:10px;display:flex;align-items:center;gap:8px;}
+.mon-chk.ok{border-color:rgba(0,255,65,.3);}.mon-chk.err{border-color:rgba(255,51,51,.3);}
+.mon-chk.pnd{border-color:rgba(255,215,0,.3);}
+.mon-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.mon-dot.ok{background:var(--g);box-shadow:0 0 6px var(--g);}
+.mon-dot.err{background:var(--red);box-shadow:0 0 6px var(--red);}
+.mon-dot.pnd{background:var(--yellow);box-shadow:0 0 6px var(--yellow);animation:blink 1s infinite;}
+.mon-chk-name{flex:1;color:var(--text);}
+.mon-chk-val{font-size:9px;color:var(--dim);}
+.mon-log{background:var(--bg);border:1px solid var(--border);border-radius:4px;max-height:260px;overflow-y:auto;font-size:10px;}
+.mon-log::-webkit-scrollbar{width:3px;}
+.mon-log::-webkit-scrollbar-thumb{background:var(--border);}
+.mon-row{display:flex;gap:8px;padding:6px 10px;border-bottom:1px solid var(--border);align-items:flex-start;}
+.mon-row:last-child{border-bottom:none;}
+.mon-row .mts{color:var(--dim);font-size:9px;flex-shrink:0;width:60px;}
+.mon-row .mst{font-size:9px;padding:1px 5px;border-radius:2px;flex-shrink:0;}
+.mst-4{background:rgba(255,215,0,.1);color:var(--yellow);}
+.mst-5{background:rgba(255,51,51,.1);color:var(--red);}
+.mon-row .mep{color:var(--dim);flex:1;word-break:break-all;}
+.mon-empty{text-align:center;padding:24px;color:var(--dim);font-size:10px;}
+.mon-foot{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;}
+.mon-btn-ico{background:none;border:1px solid var(--border);color:var(--dim);padding:5px 12px;font-size:9px;letter-spacing:1px;font-family:'Share Tech Mono',monospace;cursor:pointer;border-radius:4px;display:flex;align-items:center;gap:5px;transition:all .2s;}
+.mon-btn-ico:hover{border-color:var(--g);color:var(--g);}
+.mon-btn-ico.danger:hover{border-color:var(--red);color:var(--red);}
+/* Ícone monitor no header */
+.mon-trigger{background:none;border:1px solid var(--border);color:var(--dim);padding:5px 10px;border-radius:3px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px;font-size:10px;}
+.mon-trigger:hover{border-color:var(--cyan);color:var(--cyan);}
+.mon-trigger .mbadge{background:var(--red);color:#fff;font-size:8px;padding:1px 4px;border-radius:10px;min-width:14px;text-align:center;display:none;}
+.mon-trigger .mbadge.show{display:inline-block;}
+
 /* ── LUCIDE ICONS ── */
 .lucide{vertical-align:middle;display:inline-block;flex-shrink:0;}
 button .lucide{margin-right:3px;position:relative;top:-1px;}
@@ -783,6 +827,7 @@ button .lucide{margin-right:3px;position:relative;top:-1px;}
   <div class="hdr-r">
     <span class="live"><span class="dot"></span> ONLINE</span>
     <span class="clk" id="clk"></span>
+    <button class="mon-trigger" onclick="monToggle()" title="Monitoramento"><i data-lucide="activity" style="width:13px;height:13px;margin:0"></i><span class="mbadge" id="monBadge"></span></button>
     <button class="tbtn" id="themeBtn" onclick="toggleTheme()"><i data-lucide="sun" id="themeIco"></i> <span id="themeTxt">LIGHT</span></button>
   </div>
 </div>
@@ -836,6 +881,38 @@ button .lucide{margin-right:3px;position:relative;top:-1px;}
     <div class="chat-hint">Enter para nova linha &nbsp;·&nbsp; Ctrl+Enter para enviar &nbsp;·&nbsp; Anexe planilhas para análise</div>
   </div>
 </div>
+</div>
+
+<!-- ══ MONITOR OVERLAY ══ -->
+<div class="mon-overlay" id="monOverlay" onclick="monClose(event)">
+  <div class="mon-panel" onclick="event.stopPropagation()">
+    <div class="mon-hdr">
+      <i data-lucide="activity" style="width:14px;height:14px;color:var(--g)"></i>
+      <div class="mon-title">MONITORAMENTO</div>
+      <button class="mon-close" onclick="monToggle()"><i data-lucide="x" style="width:14px;height:14px;margin:0"></i></button>
+    </div>
+    <div class="mon-body">
+      <div class="mon-section">
+        <div class="mon-slbl">Status dos serviços</div>
+        <div class="mon-checks" id="monChecks">
+          <div class="mon-chk pnd"><div class="mon-dot pnd"></div><div class="mon-chk-name">Verificando...</div></div>
+        </div>
+      </div>
+      <div class="mon-section">
+        <div class="mon-slbl" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Log de erros recentes</span>
+          <span id="monErrCount" style="font-size:9px;color:var(--dim)"></span>
+        </div>
+        <div class="mon-log" id="monLog">
+          <div class="mon-empty">Carregando...</div>
+        </div>
+      </div>
+    </div>
+    <div class="mon-foot">
+      <button class="mon-btn-ico" onclick="monRefresh()"><i data-lucide="refresh-cw" style="width:11px;height:11px"></i> ATUALIZAR</button>
+      <button class="mon-btn-ico danger" onclick="monClearLogs()"><i data-lucide="trash-2" style="width:11px;height:11px"></i> LIMPAR LOGS</button>
+    </div>
+  </div>
 </div>
 
 <!-- ══ TAB: PROCESSAR ══ -->
@@ -1642,6 +1719,90 @@ async function chatSend(){
   btn.disabled=false;
   inp.focus();
 }
+
+// ═══════════════════════════════════════════
+// MONITOR
+// ═══════════════════════════════════════════
+function monToggle(){
+  const ov=document.getElementById('monOverlay');
+  ov.classList.toggle('open');
+  if(ov.classList.contains('open')) monRefresh();
+}
+function monClose(e){if(e.target===document.getElementById('monOverlay'))monToggle();}
+
+async function monRefresh(){
+  lucide.createIcons();
+  // Health check
+  const checksEl=document.getElementById('monChecks');
+  checksEl.innerHTML='<div class="mon-chk pnd"><div class="mon-dot pnd"></div><div class="mon-chk-name">Verificando...</div></div>';
+  try{
+    const r=await fetch(`${API_URL}/api/health/full`);
+    const d=await r.json();
+    const checks=d.checks||{};
+    const items=[
+      {key:'database',label:'Banco de Dados (Neon)'},
+      {key:'gemini',label:'Gemini AI'},
+    ];
+    checksEl.innerHTML=items.map(({key,label})=>{
+      const c=checks[key]||{};
+      const ok=c.status==='ok';
+      const cls=ok?'ok':'err';
+      const val=ok?'Online':(c.detail?c.detail.slice(0,30):'Erro');
+      return`<div class="mon-chk ${cls}"><div class="mon-dot ${cls}"></div><div class="mon-chk-name">${label}</div><div class="mon-chk-val">${val}</div></div>`;
+    }).join('');
+    // status geral
+    const overallOk=d.status==='ok';
+    checksEl.innerHTML+=`<div class="mon-chk ${overallOk?'ok':'err'}" style="grid-column:1/-1"><div class="mon-dot ${overallOk?'ok':'err'}"></div><div class="mon-chk-name">Status Geral</div><div class="mon-chk-val">${overallOk?'Todos sistemas OK':d.status}</div></div>`;
+    // total erros
+    if(checks.error_count_total!==undefined){
+      checksEl.innerHTML+=`<div class="mon-chk" style="grid-column:1/-1"><div class="mon-dot ok"></div><div class="mon-chk-name">Total de erros registrados</div><div class="mon-chk-val">${checks.error_count_total}</div></div>`;
+    }
+  }catch(e){
+    checksEl.innerHTML=`<div class="mon-chk err" style="grid-column:1/-1"><div class="mon-dot err"></div><div class="mon-chk-name">Backend offline ou dormindo</div><div class="mon-chk-val">${e.message.slice(0,40)}</div></div>`;
+  }
+  // Logs de erro
+  const logEl=document.getElementById('monLog');
+  try{
+    const r=await fetch(`${API_URL}/api/logs?limit=50`);
+    const logs=await r.json();
+    const badge=document.getElementById('monBadge');
+    if(logs.length>0){
+      badge.textContent=logs.length>99?'99+':logs.length;
+      badge.classList.add('show');
+    }else{
+      badge.classList.remove('show');
+    }
+    document.getElementById('monErrCount').textContent=`${logs.length} entradas`;
+    if(!logs.length){logEl.innerHTML='<div class="mon-empty">Nenhum erro registrado</div>';return;}
+    logEl.innerHTML=logs.map(l=>{
+      const ts=new Date(l.created_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      const cls=l.status_code>=500?'mst-5':'mst-4';
+      return`<div class="mon-row"><span class="mts">${ts}</span><span class="mst ${cls}">${l.status_code}</span><span class="mep">${l.method} ${l.endpoint}</span></div>`;
+    }).join('');
+  }catch(e){
+    logEl.innerHTML=`<div class="mon-empty">Erro ao carregar logs: ${e.message}</div>`;
+  }
+  lucide.createIcons();
+}
+
+async function monClearLogs(){
+  if(!confirm('Limpar todos os logs de erro?'))return;
+  await fetch(`${API_URL}/api/logs`,{method:'DELETE'});
+  document.getElementById('monBadge').classList.remove('show');
+  monRefresh();
+}
+
+// Verificar erros ao iniciar (ícone badge)
+setTimeout(async()=>{
+  try{
+    const r=await fetch(`${API_URL}/api/logs?limit=1`);
+    const logs=await r.json();
+    if(logs.length>0){
+      const badge=document.getElementById('monBadge');
+      badge.textContent='!';badge.classList.add('show');
+    }
+  }catch(e){}
+},3000);
 
 // Renderizar ícones Lucide após DOM pronto
 document.addEventListener('DOMContentLoaded',()=>lucide.createIcons());

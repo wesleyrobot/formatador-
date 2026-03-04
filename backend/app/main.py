@@ -1,8 +1,9 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from .database import engine, Base
-from .routers import upload, sessions, contacts, ml, ai
+from .database import engine, Base, SessionLocal
+from .models import ErrorLog
+from .routers import upload, sessions, contacts, ml, ai, logs
 
 Base.metadata.create_all(bind=engine)
 
@@ -27,6 +28,38 @@ app.include_router(sessions.router, prefix="/api")
 app.include_router(contacts.router, prefix="/api")
 app.include_router(ml.router, prefix="/api")
 app.include_router(ai.router, prefix="/api")
+app.include_router(logs.router, prefix="/api")
+
+
+@app.middleware("http")
+async def log_errors_middleware(request: Request, call_next):
+    response = await call_next(request)
+    if response.status_code >= 400:
+        # Ignora health checks e OPTIONS
+        if request.url.path not in ("/health", "/", "/api/health/full") and request.method != "OPTIONS":
+            try:
+                db = SessionLocal()
+                entry = ErrorLog(
+                    method=request.method,
+                    endpoint=str(request.url.path),
+                    status_code=response.status_code,
+                    error_message=f"HTTP {response.status_code} em {request.method} {request.url.path}",
+                )
+                db.add(entry)
+                db.commit()
+                db.close()
+                # Limita a 500 entradas
+                db2 = SessionLocal()
+                count = db2.query(ErrorLog).count()
+                if count > 500:
+                    oldest = db2.query(ErrorLog).order_by(ErrorLog.created_at).first()
+                    if oldest:
+                        db2.delete(oldest)
+                        db2.commit()
+                db2.close()
+            except Exception:
+                pass
+    return response
 
 
 @app.get("/")
