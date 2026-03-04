@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CONTACT PROCESSOR v3 — AI</title>
+<script src="https://unpkg.com/lucide@0.400.0/dist/umd/lucide.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
 // ═══════════════════════════════════════════
 // DEEP LEARNING ENGINE
@@ -81,7 +82,7 @@ async function runDeepAnalysis(){
   if(hist.length===0&&(mem.sessions||0)===0){
     const chat=document.getElementById('dlChat');
     const d=document.createElement('div');d.className='msg msg-ai';
-    d.innerHTML='<span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>Ainda não há dados suficientes para treinar. Processe pelo menos um arquivo primeiro!';
+    d.innerHTML='<span class="msg-ico">DEEP LEARNING ENGINE</span>Ainda não há dados suficientes para treinar. Processe pelo menos um arquivo primeiro!';
     chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
     return;
   }
@@ -133,7 +134,7 @@ Seja direto e técnico como um especialista em data quality.`;
 
     const text=data.content?.[0]?.text||'Não foi possível gerar análise.';
     const d=document.createElement('div');d.className='msg msg-ai';
-    const formatted=text.split('\n').join('<br>');d.innerHTML=`<span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>${formatted}`;
+    const formatted=text.split('\n').join('<br>');d.innerHTML=`<span class="msg-ico">DEEP LEARNING ENGINE</span>${formatted}`;
     chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
 
     learnFromSession({msg:'Análise de deep learning executada',total:0,valid:0});
@@ -143,7 +144,7 @@ Seja direto e técnico como um especialista em data quality.`;
   }catch(e){
     typing.remove();
     const d=document.createElement('div');d.className='msg msg-ai';
-    d.innerHTML=`<span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>Erro: ${e.message}`;
+    d.innerHTML=`<span class="msg-ico">DEEP LEARNING ENGINE</span>Erro: ${e.message}`;
     chat.appendChild(d);
     document.getElementById('dlStatus').textContent='Erro no treinamento';
     document.getElementById('dlStatus').className='ai-status';
@@ -257,7 +258,7 @@ async function runDeepAnalysis(){
   if(hist.length===0&&(mem.sessions||0)===0){
     const chat=document.getElementById('dlChat');
     const d=document.createElement('div');d.className='msg msg-ai';
-    d.innerHTML='<span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>Ainda não há dados suficientes para treinar. Processe pelo menos um arquivo primeiro!';
+    d.innerHTML='<span class="msg-ico">DEEP LEARNING ENGINE</span>Ainda não há dados suficientes para treinar. Processe pelo menos um arquivo primeiro!';
     chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
     return;
   }
@@ -309,7 +310,7 @@ Seja direto e técnico como um especialista em data quality.`;
 
     const text=data.content?.[0]?.text||'Não foi possível gerar análise.';
     const d=document.createElement('div');d.className='msg msg-ai';
-    const formatted=text.split('\n').join('<br>');d.innerHTML=`<span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>${formatted}`;
+    const formatted=text.split('\n').join('<br>');d.innerHTML=`<span class="msg-ico">DEEP LEARNING ENGINE</span>${formatted}`;
     chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
 
     learnFromSession({msg:'Análise de deep learning executada',total:0,valid:0});
@@ -319,7 +320,7 @@ Seja direto e técnico como um especialista em data quality.`;
   }catch(e){
     typing.remove();
     const d=document.createElement('div');d.className='msg msg-ai';
-    d.innerHTML=`<span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>Erro: ${e.message}`;
+    d.innerHTML=`<span class="msg-ico">DEEP LEARNING ENGINE</span>Erro: ${e.message}`;
     chat.appendChild(d);
     document.getElementById('dlStatus').textContent='Erro no treinamento';
     document.getElementById('dlStatus').className='ai-status';
@@ -433,7 +434,7 @@ async function runDeepAnalysis(){
   if(hist.length===0&&(mem.sessions||0)===0){
     const chat=document.getElementById('dlChat');
     const d=document.createElement('div');d.className='msg msg-ai';
-    d.innerHTML='<span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>Ainda não há dados suficientes para treinar. Processe pelo menos um arquivo primeiro!';
+    d.innerHTML='<span class="msg-ico">DEEP LEARNING ENGINE</span>Ainda não há dados suficientes para treinar. Processe pelo menos um arquivo primeiro!';
     chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
     return;
   }
@@ -485,7 +486,7 @@ Seja direto e técnico como um especialista em data quality.`;
 
     const text=data.content?.[0]?.text||'Não foi possível gerar análise.';
     const d=document.createElement('div');d.className='msg msg-ai';
-    const formatted=text.split('\n').join('<br>');d.innerHTML=`<span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>${formatted}`;
+    const formatted=text.split('\n').join('<br>');d.innerHTML=`<span class="msg-ico">DEEP LEARNING ENGINE</span>${formatted}`;
     chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
 
     learnFromSession({msg:'Análise de deep learning executada',total:0,valid:0});
@@ -495,7 +496,7 @@ Seja direto e técnico como um especialista em data quality.`;
   }catch(e){
     typing.remove();
     const d=document.createElement('div');d.className='msg msg-ai';
-    d.innerHTML=`<span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>Erro: ${e.message}`;
+    d.innerHTML=`<span class="msg-ico">DEEP LEARNING ENGINE</span>Erro: ${e.message}`;
     chat.appendChild(d);
     document.getElementById('dlStatus').textContent='Erro no treinamento';
     document.getElementById('dlStatus').className='ai-status';
@@ -710,6 +711,20 @@ input:focus,select:focus{border-color:var(--g);box-shadow:0 0 8px rgba(0,255,65,
 ::-webkit-scrollbar-track{background:var(--bg);}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 @media(max-width:768px){.g2,.g3{grid-template-columns:1fr;}.fw{grid-column:1;}.sg{grid-template-columns:repeat(2,1fr);}}
+
+/* ── LUCIDE ICONS ── */
+.lucide{vertical-align:middle;display:inline-block;flex-shrink:0;}
+button .lucide{margin-right:3px;position:relative;top:-1px;}
+.btn .lucide{width:14px;height:14px;}
+.btn-sm .lucide{width:11px;height:11px;}
+.tbtn .lucide{width:12px;height:12px;}
+.tab .lucide{width:13px;height:13px;margin-right:5px;}
+.tog .lucide{width:11px;height:11px;}
+.rm .lucide{width:11px;height:11px;margin-right:0;}
+.ph .lucide{width:11px;height:11px;margin-right:4px;position:relative;top:-1px;}
+.ai-avatar .lucide{width:18px;height:18px;stroke:white;stroke-width:2;margin-right:0;}
+.dz-ico .lucide{width:32px;height:32px;stroke:var(--g);display:block;margin:0 auto;stroke-width:1.5;}
+.hi-dl .lucide{width:11px;height:11px;margin-right:3px;position:relative;top:-1px;}
 </style>
 </head>
 <body>
@@ -719,15 +734,15 @@ input:focus,select:focus{border-color:var(--g);box-shadow:0 0 8px rgba(0,255,65,
   <div class="hdr-r">
     <span class="live"><span class="dot"></span> ONLINE</span>
     <span class="clk" id="clk"></span>
-    <button class="tbtn" onclick="toggleTheme()">☀ LIGHT</button>
+    <button class="tbtn" id="themeBtn" onclick="toggleTheme()"><i data-lucide="sun" id="themeIco"></i> <span id="themeTxt">LIGHT</span></button>
   </div>
 </div>
 
 <div class="tabs">
-  <button class="tab on" onclick="goTab('proc')">⚙ PROCESSAR</button>
-  <button class="tab" onclick="goTab('prev')">👁 PREVIEW</button>
-  <button class="tab" onclick="goTab('hist')">📋 HISTÓRICO</button>
-  <button class="tab" onclick="goTab('learn')">🧠 APRENDIZADO</button>
+  <button class="tab on" onclick="goTab('proc')"><i data-lucide="settings-2"></i>PROCESSAR</button>
+  <button class="tab" onclick="goTab('prev')"><i data-lucide="eye"></i>PREVIEW</button>
+  <button class="tab" onclick="goTab('hist')"><i data-lucide="clock-3"></i>HISTÓRICO</button>
+  <button class="tab" onclick="goTab('learn')"><i data-lucide="brain"></i>APRENDIZADO</button>
 </div>
 
 <!-- ══ TAB: PROCESSAR ══ -->
@@ -741,7 +756,7 @@ input:focus,select:focus{border-color:var(--g);box-shadow:0 0 8px rgba(0,255,65,
     <div class="pb">
       <div class="dz" id="dz">
         <input type="file" id="fi" multiple accept=".csv,.xlsx,.xls,.txt,.zip">
-        <span class="dz-ico">📂</span>
+        <span class="dz-ico"><i data-lucide="folder-open"></i></span>
         <h3>ARRASTAR ARQUIVOS AQUI</h3>
         <p>ou clique para selecionar<br>CSV · XLSX · ZIP · TXT</p>
       </div>
@@ -771,8 +786,8 @@ input:focus,select:focus{border-color:var(--g);box-shadow:0 0 8px rgba(0,255,65,
           <button class="tog on" id="t-fixc" onclick="tOpt(this,'fixc')">Corrigir Vírgulas</button>
         </div>
       </div>
-      <button class="btn btn-ai mt" id="btnAI" onclick="runAI()" disabled>🤖 ANALISAR COM IA</button>
-      <button class="btn mt" id="btnProc" onclick="processFiles()" disabled style="margin-top:7px">▶ PROCESSAR</button>
+      <button class="btn btn-ai mt" id="btnAI" onclick="runAI()" disabled><i data-lucide="bot"></i> ANALISAR COM IA</button>
+      <button class="btn mt" id="btnProc" onclick="processFiles()" disabled style="margin-top:7px"><i data-lucide="play"></i> PROCESSAR</button>
       <div class="pgw" id="pgw" style="display:none">
         <div class="pglbl"><span id="pgLbl">Processando...</span><span id="pgPct">0%</span></div>
         <div class="pgbar"><div class="pgfill" id="pgF" style="width:0%"></div></div>
@@ -784,19 +799,19 @@ input:focus,select:focus{border-color:var(--g);box-shadow:0 0 8px rgba(0,255,65,
   <!-- AI ROBOT -->
   <div class="ai-panel fw" id="aiPanel">
     <div class="ai-header">
-      <div class="ai-avatar">🤖</div>
+      <div class="ai-avatar"><i data-lucide="bot"></i></div>
       <div class="ai-info">
         <div class="ai-name">EXCEL · SPECIALIST · AI</div>
         <div class="ai-status" id="aiStatus">Aguardando arquivos...</div>
       </div>
       <div class="ph-r">
-        <span style="font-size:9px;color:var(--dim);letter-spacing:1px">POWERED BY CLAUDE</span>
+        <span style="font-size:9px;color:var(--dim);letter-spacing:1px">POWERED BY GEMINI</span>
       </div>
     </div>
     <div class="ai-chat" id="aiChat">
       <div class="msg msg-ai">
-        <span class="msg-ico">🤖 EXCEL SPECIALIST</span>
-        Olá! Sou o especialista em planilhas com IA. Envie seus arquivos e clique em <strong>🤖 ANALISAR COM IA</strong> para eu inspecionar a estrutura, detectar colunas bagunçadas, identificar problemas e organizar tudo automaticamente antes do processamento.
+        <span class="msg-ico">EXCEL SPECIALIST</span>
+        Olá! Sou o especialista em planilhas com IA. Envie seus arquivos e clique em <strong>ANALISAR COM IA</strong> para eu inspecionar a estrutura, detectar colunas bagunçadas, identificar problemas e organizar tudo automaticamente antes do processamento.
       </div>
     </div>
   </div>
@@ -806,8 +821,8 @@ input:focus,select:focus{border-color:var(--g);box-shadow:0 0 8px rgba(0,255,65,
     <div class="ph">
       Relatório
       <div class="ph-r">
-        <button class="btn btn-sm btn-cyan" id="btnDL" onclick="dlZip()" style="display:none">⬇ BAIXAR ZIP</button>
-        <button class="btn btn-sm" id="btnPV" onclick="goTab('prev')" style="display:none">👁 PREVIEW</button>
+        <button class="btn btn-sm btn-cyan" id="btnDL" onclick="dlZip()" style="display:none"><i data-lucide="download"></i> BAIXAR ZIP</button>
+        <button class="btn btn-sm" id="btnPV" onclick="goTab('prev')" style="display:none"><i data-lucide="eye"></i> PREVIEW</button>
       </div>
     </div>
     <div class="pb">
@@ -836,17 +851,17 @@ input:focus,select:focus{border-color:var(--g);box-shadow:0 0 8px rgba(0,255,65,
     <div class="ph">
       Preview de Contatos
       <div class="ph-r">
-        <button class="btn btn-sm btn-cyan" onclick="dlZip()">⬇ BAIXAR ZIP</button>
-        <button class="btn btn-sm btn-red" onclick="clearPrev()">✕ LIMPAR</button>
+        <button class="btn btn-sm btn-cyan" onclick="dlZip()"><i data-lucide="download"></i> BAIXAR ZIP</button>
+        <button class="btn btn-sm btn-red" onclick="clearPrev()"><i data-lucide="x"></i> LIMPAR</button>
       </div>
     </div>
     <div class="pb">
       <div class="pmeta" id="pmeta">Nenhum dado processado ainda.</div>
       <div class="row"><input type="text" id="srch" placeholder="Buscar nome ou número..." oninput="filterPrev()"></div>
       <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
-        <button class="tog on" id="fv" onclick="tFilter(this,'valid')">✓ Válidos</button>
-        <button class="tog on" id="fw" onclick="tFilter(this,'warn')">⚠ Avisos</button>
-        <button class="tog on" id="fe" onclick="tFilter(this,'err')">✗ Inválidos</button>
+        <button class="tog on" id="fv" onclick="tFilter(this,'valid')"><i data-lucide="check"></i> Válidos</button>
+        <button class="tog on" id="fw" onclick="tFilter(this,'warn')"><i data-lucide="alert-triangle"></i> Avisos</button>
+        <button class="tog on" id="fe" onclick="tFilter(this,'err')"><i data-lucide="x-circle"></i> Inválidos</button>
       </div>
       <div class="ptbl-wrap">
         <table class="ptbl"><thead><tr><th>#</th><th>Nome</th><th>Número</th><th>Status</th><th>Arquivo</th></tr></thead>
@@ -861,7 +876,7 @@ input:focus,select:focus{border-color:var(--g);box-shadow:0 0 8px rgba(0,255,65,
 <div class="tc" id="tab-hist">
 <div class="wrap">
   <div class="pnl">
-    <div class="ph">Histórico<div class="ph-r"><button class="btn btn-sm btn-red" onclick="clearHist()">✕ LIMPAR</button></div></div>
+    <div class="ph">Histórico<div class="ph-r"><button class="btn btn-sm btn-red" onclick="clearHist()"><i data-lucide="trash-2"></i> LIMPAR</button></div></div>
     <div class="pb" id="histBody"></div>
   </div>
 </div>
@@ -891,13 +906,15 @@ setInterval(()=>document.getElementById('clk').textContent=new Date().toLocaleTi
 (function(){
   const t=localStorage.getItem('theme')||'dark';
   document.documentElement.setAttribute('data-theme',t);
-  document.querySelector('.tbtn').textContent=t==='dark'?'☀ LIGHT':'🌙 DARK';
+  if(t!=='dark'){document.getElementById('themeIco').setAttribute('data-lucide','moon');document.getElementById('themeTxt').textContent='DARK';}
 })();
 
 function toggleTheme(){
   const h=document.documentElement,d=h.getAttribute('data-theme')==='dark';
   h.setAttribute('data-theme',d?'light':'dark');
-  document.querySelector('.tbtn').textContent=d?'🌙 DARK':'☀ LIGHT';
+  document.getElementById('themeIco').setAttribute('data-lucide',d?'moon':'sun');
+  document.getElementById('themeTxt').textContent=d?'DARK':'LIGHT';
+  lucide.createIcons();
   localStorage.setItem('theme',d?'light':'dark');
 }
 
@@ -931,12 +948,13 @@ function addFiles(nf){
 }
 function removeFile(i){files.splice(i,1);renderFL();const has=files.length>0;document.getElementById('btnAI').disabled=!has;document.getElementById('btnProc').disabled=!has;}
 function renderFL(){
-  const ico={csv:'📄',xlsx:'📊',xls:'📊',zip:'🗜️',txt:'📝'};
+  const ico={csv:'file-text',xlsx:'table-2',xls:'table-2',zip:'archive',txt:'file-text'};
   document.getElementById('fl').innerHTML=files.map((f,i)=>{
     const ext=f.name.split('.').pop().toLowerCase();
     const sz=f.size>1048576?(f.size/1048576).toFixed(1)+'MB':Math.round(f.size/1024)+'KB';
-    return`<div class="fi"><span>${ico[ext]||'📁'}</span><span class="fn">${f.name}</span><span class="fs">${sz}</span><button class="rm" onclick="removeFile(${i})">✕</button></div>`;
+    return`<div class="fi"><i data-lucide="${ico[ext]||'file'}" style="width:13px;height:13px;flex-shrink:0"></i><span class="fn">${f.name}</span><span class="fs">${sz}</span><button class="rm" onclick="removeFile(${i})"><i data-lucide="x" style="width:11px;height:11px"></i></button></div>`;
   }).join('');
+  lucide.createIcons();
 }
 
 // ═══════════════════════════════════════════
@@ -974,7 +992,7 @@ function animS(id,v){const e=document.getElementById(id);e.textContent=v;e.class
 function aiMsg(text,type='ai'){
   const chat=document.getElementById('aiChat');
   const cls=type==='sys'?'msg-sys':type==='ok'?'msg-ok':'msg-ai';
-  const ico=type==='ai'?'<span class="msg-ico">🤖 EXCEL SPECIALIST</span>':'';
+  const ico=type==='ai'?'<span class="msg-ico">EXCEL SPECIALIST</span>':'';
   const d=document.createElement('div');
   d.className=`msg ${cls}`;
   d.innerHTML=ico+text;
@@ -1039,7 +1057,7 @@ async function runAI(){
   aiStopTyping();
   aiMsg(`Recebi <strong>${files.length} arquivo(s)</strong>. Analisando a estrutura com IA agora...`,'ai');
   aiTyping();
-  setAiStatus('Analisando com Claude...',true);
+  setAiStatus('Analisando com Gemini...',true);
 
   // Build prompt
   const sampleText=samples.map(s=>{
@@ -1263,13 +1281,14 @@ async function renderHist(){
     const resp=await fetch(`${API_URL}/api/sessions?limit=50`);
     if(!resp.ok) throw new Error('Erro ao carregar histórico');
     const sessions=await resp.json();
-    if(!sessions.length){el.innerHTML='<div class="hi-empty">📋 Nenhum processamento registrado ainda.</div>';return;}
+    if(!sessions.length){el.innerHTML='<div class="hi-empty">Nenhum processamento registrado ainda.</div>';return;}
     el.innerHTML=sessions.map(x=>{
       const chunks=x.chunks||0;
       const files=(x.filenames||[]).join(', ');
       const date=new Date(x.created_at).toLocaleString('pt-BR');
-      return`<div class="hi"><div class="hi-hdr"><span class="hi-dt">${date}</span><span class="hi-ttl">${files}</span><span class="bdg bok">${chunks} arquivos</span><button class="btn btn-sm btn-red" style="font-size:8px;padding:2px 6px" onclick="deleteSession(${x.id},this)">✕</button></div><div class="hi-sts"><div class="hi-st">Total: <span>${x.total_raw}</span></div><div class="hi-st">Válidos: <span style="color:var(--g)">${x.total_valid}</span></div><div class="hi-st">Duplicados: <span style="color:var(--yellow)">${x.duplicates_removed}</span></div><div class="hi-st">Inválidos: <span style="color:var(--red)">${x.total_err+x.total_warn}</span></div></div>${x.id?`<div style="margin-top:6px"><a href="${API_URL}/api/sessions/${x.id}/download" target="_blank" style="font-size:9px;color:var(--cyan)">⬇ Baixar ZIP</a></div>`:''}</div>`;
+      return`<div class="hi"><div class="hi-hdr"><span class="hi-dt">${date}</span><span class="hi-ttl">${files}</span><span class="bdg bok">${chunks} arquivos</span><button class="btn btn-sm btn-red" style="font-size:8px;padding:2px 6px" onclick="deleteSession(${x.id},this)"><i data-lucide="x" style="width:10px;height:10px"></i></button></div><div class="hi-sts"><div class="hi-st">Total: <span>${x.total_raw}</span></div><div class="hi-st">Válidos: <span style="color:var(--g)">${x.total_valid}</span></div><div class="hi-st">Duplicados: <span style="color:var(--yellow)">${x.duplicates_removed}</span></div><div class="hi-st">Inválidos: <span style="color:var(--red)">${x.total_err+x.total_warn}</span></div></div>${x.id?`<div style="margin-top:6px"><a href="${API_URL}/api/sessions/${x.id}/download" target="_blank" style="font-size:9px;color:var(--cyan);display:flex;align-items:center;gap:4px"><i data-lucide="download" style="width:11px;height:11px"></i> Baixar ZIP</a></div>`:''}</div>`;
     }).join('');
+    lucide.createIcons();
   }catch(e){
     el.innerHTML=`<div class="hi-empty">Erro ao carregar: ${e.message}</div>`;
   }
@@ -1337,7 +1356,7 @@ async function runDeepAnalysis(){
     if((stats.total_sessions||0)===0){
       typing.remove();
       const d=document.createElement('div');d.className='msg msg-ai';
-      d.innerHTML='<span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>Ainda não há dados suficientes. Processe pelo menos um arquivo primeiro!';
+      d.innerHTML='<span class="msg-ico">DEEP LEARNING ENGINE</span>Ainda não há dados suficientes. Processe pelo menos um arquivo primeiro!';
       chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
       document.getElementById('dlStatus').textContent='Aguardando dados';
       document.getElementById('dlStatus').className='ai-status';
@@ -1357,7 +1376,7 @@ async function runDeepAnalysis(){
 
     const text=data.analysis||'Análise concluída.';
     const d=document.createElement('div');d.className='msg msg-ai';
-    d.innerHTML=`<span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>${text.split('\n').join('<br>')}`;
+    d.innerHTML=`<span class="msg-ico">DEEP LEARNING ENGINE</span>${text.split('\n').join('<br>')}`;
     chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
 
     renderDLStats();
@@ -1366,7 +1385,7 @@ async function runDeepAnalysis(){
   }catch(e){
     typing.remove();
     const d=document.createElement('div');d.className='msg msg-ai';
-    d.innerHTML=`<span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>Erro: ${e.message}`;
+    d.innerHTML=`<span class="msg-ico">DEEP LEARNING ENGINE</span>Erro: ${e.message}`;
     chat.appendChild(d);
     document.getElementById('dlStatus').textContent='Erro no treinamento';
     document.getElementById('dlStatus').className='ai-status';
@@ -1392,6 +1411,9 @@ goTab=function(id){
   if(id==='hist') renderHist();
 };
 
+// Renderizar ícones Lucide após DOM pronto
+document.addEventListener('DOMContentLoaded',()=>lucide.createIcons());
+
 </script>
 
 <!-- ══ TAB: DEEP LEARNING ══ -->
@@ -1399,7 +1421,7 @@ goTab=function(id){
 <div class="wrap">
   <div class="g2">
     <div class="pnl">
-      <div class="ph">🧠 Memória de Aprendizado<div class="ph-r"><button class="btn btn-sm btn-red" onclick="clearMemory()">✕ RESETAR</button></div></div>
+      <div class="ph"><i data-lucide="brain"></i> Memória de Aprendizado<div class="ph-r"><button class="btn btn-sm btn-red" onclick="clearMemory()"><i data-lucide="rotate-ccw"></i> RESETAR</button></div></div>
       <div class="pb">
         <div style="font-size:10px;color:var(--dim);margin-bottom:14px;line-height:1.8">
           O sistema aprende com cada processamento. Quanto mais você usar, mais inteligente fica na detecção de padrões, formatos de número e estruturas de planilha.
@@ -1417,7 +1439,7 @@ goTab=function(id){
       </div>
     </div>
     <div class="pnl">
-      <div class="ph">📈 Histórico de Aprendizado</div>
+      <div class="ph"><i data-lucide="trending-up"></i> Histórico de Aprendizado</div>
       <div class="pb">
         <div class="term" id="dlLog" style="max-height:340px">
           <div class="ll"><span class="ldm">Nenhum aprendizado registrado ainda...</span></div>
@@ -1426,20 +1448,20 @@ goTab=function(id){
     </div>
     <div class="ai-panel fw">
       <div class="ai-header">
-        <div class="ai-avatar">🧠</div>
+        <div class="ai-avatar"><i data-lucide="brain"></i></div>
         <div class="ai-info">
           <div class="ai-name">DEEP · LEARNING · ENGINE</div>
           <div class="ai-status" id="dlStatus">Pronto para aprender</div>
         </div>
         <div class="ph-r">
-          <button class="btn btn-sm btn-ai" onclick="runDeepAnalysis()">🧠 TREINAR AGORA</button>
+          <button class="btn btn-sm btn-ai" onclick="runDeepAnalysis()"><i data-lucide="zap"></i> TREINAR AGORA</button>
         </div>
       </div>
       <div class="ai-chat" id="dlChat">
         <div class="msg msg-ai">
-          <span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>
+          <span class="msg-ico">DEEP LEARNING ENGINE</span>
           Sou o motor de aprendizado profundo. Analiso o histórico dos seus processamentos anteriores, identifico padrões recorrentes de formatação, aprendo quais tipos de erros aparecem mais e otimizo automaticamente as regras de limpeza para os seus arquivos específicos.<br><br>
-          Quanto mais processamentos você fizer, mais preciso fico. Clique em <strong>🧠 TREINAR AGORA</strong> para que eu analise todo o histórico disponível.
+          Quanto mais processamentos você fizer, mais preciso fico. Clique em <strong>TREINAR AGORA</strong> para que eu analise todo o histórico disponível.
         </div>
       </div>
     </div>
