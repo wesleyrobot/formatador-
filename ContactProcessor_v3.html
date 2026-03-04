@@ -719,6 +719,48 @@ input:focus,select:focus{border-color:var(--g);box-shadow:0 0 8px rgba(0,255,65,
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 @media(max-width:768px){.g2,.g3{grid-template-columns:1fr;}.fw{grid-column:1;}.sg{grid-template-columns:repeat(2,1fr);}}
 
+/* ── CHAT IA ── */
+.chat-wrap{max-width:860px;margin:0 auto;padding:20px 20px 0;display:flex;flex-direction:column;height:calc(100vh - 108px);}
+.chat-msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:16px;padding:4px 0 16px;}
+.chat-msgs::-webkit-scrollbar{width:3px;}
+.chat-msgs::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.cmsg{display:flex;gap:10px;align-items:flex-start;animation:msgIn .25s ease;}
+.cmsg-user{flex-direction:row-reverse;}
+.cavatarw{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.cavatar-ai{background:linear-gradient(135deg,var(--purple),var(--cyan));box-shadow:0 0 10px rgba(191,95,255,.4);animation:aiGlow 3s infinite;}
+.cavatar-user{background:linear-gradient(135deg,var(--g),var(--gd));box-shadow:0 0 8px rgba(0,255,65,.25);}
+.cavatar-ai .lucide{width:15px;height:15px;stroke:white;stroke-width:2;margin:0;}
+.cavatar-user .lucide{width:15px;height:15px;stroke:var(--bg);stroke-width:2.5;margin:0;}
+.cbubble{max-width:78%;padding:10px 15px;border-radius:10px;font-size:11px;line-height:1.85;}
+.cbubble-ai{background:rgba(191,95,255,.06);border:1px solid rgba(191,95,255,.18);color:var(--text);border-top-left-radius:2px;}
+.cbubble-user{background:rgba(0,255,65,.07);border:1px solid rgba(0,255,65,.2);color:var(--g);border-top-right-radius:2px;}
+.cbubble pre{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:8px;font-size:10px;overflow-x:auto;margin:6px 0;white-space:pre-wrap;}
+.cbubble strong{color:var(--g);}
+.cbubble-ai strong{color:var(--cyan);}
+.cmeta{font-size:8px;color:var(--dim);letter-spacing:1px;margin-top:4px;}
+.cmsg-user .cmeta{text-align:right;}
+.chat-typing{display:flex;gap:4px;align-items:center;padding:12px 15px;background:rgba(191,95,255,.06);border:1px solid rgba(191,95,255,.18);border-radius:10px;border-top-left-radius:2px;width:fit-content;}
+.chat-typing-dot{width:5px;height:5px;border-radius:50%;background:var(--purple);animation:typing .9s infinite;}
+.chat-typing-dot:nth-child(2){animation-delay:.2s;}
+.chat-typing-dot:nth-child(3){animation-delay:.4s;}
+.chat-bottom{border-top:1px solid var(--border);padding:12px 0;}
+.chat-file-chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:9px;color:var(--dim);margin-bottom:8px;letter-spacing:1px;}
+.chat-file-chip button{background:none;border:none;color:var(--dim);cursor:pointer;padding:0;line-height:1;}
+.chat-row{display:flex;gap:8px;align-items:flex-end;}
+.chat-ta{flex:1;background:var(--inp);border:1px solid var(--border);color:var(--text);padding:11px 14px;font-family:'Share Tech Mono',monospace;font-size:11px;border-radius:8px;outline:none;resize:none;max-height:130px;overflow-y:auto;transition:border-color .2s;line-height:1.7;}
+.chat-ta:focus{border-color:var(--g);box-shadow:0 0 10px rgba(0,255,65,.06);}
+.chat-ta::placeholder{color:var(--dim);}
+.chat-btn-attach{background:none;border:1px solid var(--border);color:var(--dim);padding:11px 13px;border-radius:8px;cursor:pointer;transition:all .2s;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.chat-btn-attach:hover{border-color:var(--cyan);color:var(--cyan);}
+.chat-btn-send{background:transparent;border:2px solid var(--g);color:var(--g);padding:11px 20px;font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:2px;cursor:pointer;border-radius:8px;transition:all .3s;flex-shrink:0;display:flex;align-items:center;gap:6px;}
+.chat-btn-send:hover:not(:disabled){background:var(--g);color:var(--bg);box-shadow:0 0 18px rgba(0,255,65,.2);}
+.chat-btn-send:disabled{opacity:.3;cursor:not-allowed;}
+.chat-hint{font-size:9px;color:var(--dim);margin-top:8px;text-align:center;letter-spacing:1px;}
+.chat-welcome-cards{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;}
+.cwcard{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-size:10px;cursor:pointer;color:var(--dim);transition:all .2s;flex:1;min-width:160px;}
+.cwcard:hover{border-color:var(--g);color:var(--g);background:rgba(0,255,65,.03);}
+.cwcard strong{display:block;color:var(--text);margin-bottom:3px;font-size:10px;}
+
 /* ── LUCIDE ICONS ── */
 .lucide{vertical-align:middle;display:inline-block;flex-shrink:0;}
 button .lucide{margin-right:3px;position:relative;top:-1px;}
@@ -746,14 +788,58 @@ button .lucide{margin-right:3px;position:relative;top:-1px;}
 </div>
 
 <div class="tabs">
-  <button class="tab on" onclick="goTab('proc')"><i data-lucide="settings-2"></i>PROCESSAR</button>
+  <button class="tab on" onclick="goTab('chat')"><i data-lucide="message-square"></i>CHAT IA</button>
+  <button class="tab" onclick="goTab('proc')"><i data-lucide="settings-2"></i>PROCESSAR</button>
   <button class="tab" onclick="goTab('prev')"><i data-lucide="eye"></i>PREVIEW</button>
   <button class="tab" onclick="goTab('hist')"><i data-lucide="clock-3"></i>HISTÓRICO</button>
   <button class="tab" onclick="goTab('learn')"><i data-lucide="brain"></i>APRENDIZADO</button>
 </div>
 
+<!-- ══ TAB: CHAT IA ══ -->
+<div class="tc on" id="tab-chat">
+<div class="chat-wrap">
+  <div class="chat-msgs" id="chatMsgs">
+    <!-- Mensagem de boas-vindas -->
+    <div class="cmsg">
+      <div class="cavatarw cavatar-ai"><i data-lucide="bot"></i></div>
+      <div>
+        <div class="cbubble cbubble-ai">
+          Olá! Sou seu assistente especialista em planilhas de contatos.<br><br>
+          Posso te ajudar com:
+          <br>• Analisar e diagnosticar planilhas enviadas
+          <br>• Tirar dúvidas sobre formatação de números
+          <br>• Explicar erros e sugerir correções
+          <br>• Entender padrões de dados e qualidade
+          <br><br>
+          Envie uma planilha ou escreva sua dúvida abaixo!
+          <div class="chat-welcome-cards" style="margin-top:12px">
+            <div class="cwcard" onclick="chatQuick('Como identificar se minha planilha tem cabeçalho?')"><strong>Cabeçalho</strong>Como identificar se minha planilha tem cabeçalho?</div>
+            <div class="cwcard" onclick="chatQuick('Quais formatos de número de telefone são aceitos?')"><strong>Formatos</strong>Quais formatos de número são aceitos?</div>
+            <div class="cwcard" onclick="chatQuick('O que significa um número inválido no processamento?')"><strong>Inválidos</strong>O que significa um número inválido?</div>
+            <div class="cwcard" onclick="chatQuick('Como funciona a remoção de duplicados?')"><strong>Duplicados</strong>Como funciona a remoção de duplicados?</div>
+          </div>
+        </div>
+        <div class="cmeta">EXCEL SPECIALIST · GEMINI AI</div>
+      </div>
+    </div>
+  </div>
+  <div class="chat-bottom">
+    <div id="chatFileChip" style="display:none">
+      <span class="chat-file-chip"><i data-lucide="paperclip" style="width:10px;height:10px"></i> <span id="chatFileName">arquivo.csv</span> <button onclick="chatRemoveFile()"><i data-lucide="x" style="width:10px;height:10px"></i></button></span>
+    </div>
+    <input type="file" id="chatFileInput" style="display:none" accept=".csv,.xlsx,.xls,.txt,.zip" onchange="chatOnFile(this)">
+    <div class="chat-row">
+      <button class="chat-btn-attach" onclick="document.getElementById('chatFileInput').click()" title="Anexar planilha"><i data-lucide="paperclip" style="width:16px;height:16px;margin:0"></i></button>
+      <textarea class="chat-ta" id="chatInput" placeholder="Pergunte sobre sua planilha ou cole dados aqui..." rows="1" onkeydown="chatKey(event)" oninput="chatResize(this)"></textarea>
+      <button class="chat-btn-send" id="chatSendBtn" onclick="chatSend()"><i data-lucide="send" style="width:13px;height:13px"></i> ENVIAR</button>
+    </div>
+    <div class="chat-hint">Enter para nova linha &nbsp;·&nbsp; Ctrl+Enter para enviar &nbsp;·&nbsp; Anexe planilhas para análise</div>
+  </div>
+</div>
+</div>
+
 <!-- ══ TAB: PROCESSAR ══ -->
-<div class="tc on" id="tab-proc">
+<div class="tc" id="tab-proc">
 <div class="wrap">
 <div class="g2">
 
@@ -941,7 +1027,7 @@ function goTab(id){
   document.querySelectorAll('.tc').forEach(t=>t.classList.remove('on'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
   document.getElementById('tab-'+id).classList.add('on');
-  const idx={proc:0,prev:1,hist:2,learn:3}[id];
+  const idx={chat:0,proc:1,prev:2,hist:3,learn:4}[id];
   document.querySelectorAll('.tab')[idx].classList.add('on');
   if(id==='hist') renderHist();
 }
@@ -1426,6 +1512,136 @@ goTab=function(id){
   if(id==='learn') renderDLStats();
   if(id==='hist') renderHist();
 };
+
+// ═══════════════════════════════════════════
+// CHAT IA
+// ═══════════════════════════════════════════
+let chatHistory=[];
+let chatAttachedFile=null;
+
+function chatKey(e){
+  if(e.ctrlKey&&e.key==='Enter'){e.preventDefault();chatSend();}
+}
+
+function chatResize(el){
+  el.style.height='auto';
+  el.style.height=Math.min(el.scrollHeight,130)+'px';
+}
+
+function chatOnFile(inp){
+  if(!inp.files[0])return;
+  chatAttachedFile=inp.files[0];
+  document.getElementById('chatFileName').textContent=chatAttachedFile.name;
+  document.getElementById('chatFileChip').style.display='';
+  lucide.createIcons();
+}
+
+function chatRemoveFile(){
+  chatAttachedFile=null;
+  document.getElementById('chatFileInput').value='';
+  document.getElementById('chatFileChip').style.display='none';
+}
+
+function chatQuick(text){
+  document.getElementById('chatInput').value=text;
+  chatSend();
+}
+
+function _chatAddMsg(role,html){
+  const msgs=document.getElementById('chatMsgs');
+  const isAi=role==='assistant';
+  const div=document.createElement('div');
+  div.className='cmsg'+(isAi?'':' cmsg-user');
+  const avatarCls=isAi?'cavatar-ai':'cavatar-user';
+  const ico=isAi?'bot':'user';
+  const bubbleCls=isAi?'cbubble-ai':'cbubble-user';
+  const tm=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  div.innerHTML=`
+    <div class="cavatarw ${avatarCls}"><i data-lucide="${ico}" style="width:15px;height:15px;stroke:${isAi?'white':'var(--bg)'};stroke-width:2;margin:0"></i></div>
+    <div>
+      <div class="cbubble ${bubbleCls}">${html}</div>
+      <div class="cmeta">${isAi?'GEMINI AI · ':'VOCÊ · '}${tm}</div>
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+  lucide.createIcons();
+  return div;
+}
+
+function _chatTyping(){
+  const msgs=document.getElementById('chatMsgs');
+  const wrap=document.createElement('div');
+  wrap.className='cmsg';wrap.id='chatTypingRow';
+  wrap.innerHTML=`<div class="cavatarw cavatar-ai"><i data-lucide="bot" style="width:15px;height:15px;stroke:white;stroke-width:2;margin:0"></i></div>
+    <div class="chat-typing"><div class="chat-typing-dot"></div><div class="chat-typing-dot"></div><div class="chat-typing-dot"></div></div>`;
+  msgs.appendChild(wrap);
+  msgs.scrollTop=msgs.scrollHeight;
+  lucide.createIcons();
+}
+
+function _mdToHtml(text){
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/```([\s\S]*?)```/g,'<pre>$1</pre>')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g,'<em>$1</em>')
+    .replace(/`([^`]+)`/g,'<code style="background:var(--bg3);padding:1px 5px;border-radius:3px;font-size:10px">$1</code>')
+    .replace(/\n/g,'<br>');
+}
+
+async function chatSend(){
+  const inp=document.getElementById('chatInput');
+  const text=inp.value.trim();
+  if(!text&&!chatAttachedFile)return;
+
+  const btn=document.getElementById('chatSendBtn');
+  btn.disabled=true;
+
+  let userContent=text;
+
+  // Se tem arquivo, lê amostra das linhas
+  if(chatAttachedFile){
+    try{
+      const rows=await parseRaw(chatAttachedFile);
+      const sample=rows.slice(0,20).map((r,i)=>`Linha ${i+1}: ${JSON.stringify(r)}`).join('\n');
+      const intro=text?text+'\n\n':'Analise esta planilha:\n\n';
+      userContent=`${intro}📎 Arquivo: ${chatAttachedFile.name} (${rows.length} linhas no total)\nPrimeiras linhas:\n${sample}`;
+    }catch(e){
+      userContent=(text||'')+(text?'\n\n':'')+'[Arquivo anexado mas não foi possível ler a amostra]';
+    }
+    chatRemoveFile();
+  }
+
+  // Adiciona na tela
+  _chatAddMsg('user',_mdToHtml(userContent));
+  inp.value='';inp.style.height='auto';
+
+  // Histórico
+  chatHistory.push({role:'user',content:userContent});
+
+  // Typing indicator
+  _chatTyping();
+
+  try{
+    const resp=await fetch(`${API_URL}/api/ai/chat`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({messages:chatHistory})
+    });
+    document.getElementById('chatTypingRow')?.remove();
+    if(!resp.ok)throw new Error(`HTTP ${resp.status}`);
+    const data=await resp.json();
+    const reply=data.reply||'Sem resposta.';
+    chatHistory.push({role:'assistant',content:reply});
+    _chatAddMsg('assistant',_mdToHtml(reply));
+  }catch(e){
+    document.getElementById('chatTypingRow')?.remove();
+    _chatAddMsg('assistant',`<span style="color:var(--red)">Erro ao conectar com a IA: ${e.message}.<br>Verifique se o backend está online.</span>`);
+  }
+
+  btn.disabled=false;
+  inp.focus();
+}
 
 // Renderizar ícones Lucide após DOM pronto
 document.addEventListener('DOMContentLoaded',()=>lucide.createIcons());

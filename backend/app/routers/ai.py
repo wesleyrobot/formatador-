@@ -6,7 +6,7 @@ import os
 import json
 import httpx
 from fastapi import APIRouter, HTTPException
-from ..schemas import AIAnalyzeIn, AIDeepIn
+from ..schemas import AIAnalyzeIn, AIDeepIn, AIChatIn
 
 router = APIRouter()
 
@@ -114,3 +114,43 @@ Seja direto e técnico, máximo 200 palavras, em português."""
 
     content = await _gemini_call(api_key, prompt)
     return {"analysis": content}
+
+
+@router.post("/ai/chat")
+async def ai_chat(body: AIChatIn):
+    """Chat conversacional com IA sobre planilhas de contatos."""
+    api_key = _get_api_key()
+
+    system_instruction = (
+        "Você é um assistente especialista em planilhas de contatos, "
+        "formatação de dados, limpeza de números de telefone e processamento em massa. "
+        "Responda em português de forma clara, objetiva e técnica. "
+        "Quando o usuário enviar amostras de planilha, analise a estrutura, detecte problemas "
+        "e sugira correções práticas. Use markdown simples quando útil."
+    )
+
+    contents = []
+    for msg in body.messages:
+        role = "user" if msg.role == "user" else "model"
+        contents.append({"role": role, "parts": [{"text": msg.content}]})
+
+    payload = {
+        "contents": contents,
+        "systemInstruction": {"parts": [{"text": system_instruction}]},
+        "generationConfig": {"maxOutputTokens": 2048, "temperature": 0.3},
+    }
+    url = f"{GEMINI_URL}?key={api_key}"
+
+    async with httpx.AsyncClient(timeout=45.0) as client:
+        resp = await client.post(url, json=payload)
+
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail=f"Erro Gemini: {resp.text}")
+
+    data = resp.json()
+    try:
+        text = data["candidates"][0]["content"]["parts"][0]["text"]
+    except (KeyError, IndexError):
+        raise HTTPException(status_code=500, detail="Resposta inesperada do Gemini")
+
+    return {"reply": text}

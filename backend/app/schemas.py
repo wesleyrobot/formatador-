@@ -108,6 +108,17 @@ class MLLearnIn(BaseModel):
     msg: str = ""
 
 
+# --- AI Chat ---
+
+class AIChatMessage(BaseModel):
+    role: str   # "user" ou "assistant"
+    content: str
+
+
+class AIChatIn(BaseModel):
+    messages: List[AIChatMessage]
+
+
 # --- AI Proxy ---
 
 class AIAnalyzeIn(BaseModel):
