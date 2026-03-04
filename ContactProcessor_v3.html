@@ -550,6 +550,13 @@ goTab=function(id){
   --text: #1b5e20; --dim: #558b2f; --border: #c5e1a5;
   --card: #ffffff; --inp: #f9fbe7; --scan: transparent;
 }
+:root[data-theme="vintage"] {
+  --g: #e8910a; --gd: #c47800; --gdk: #1a0e00; --gborder: #3a2000;
+  --bg: #0a0600; --bg2: #110900; --bg3: #1a0e00;
+  --red: #ff5522; --yellow: #ffc200; --cyan: #ffaa33; --purple: #ff7700;
+  --text: #c8820a; --dim: #6b4510; --border: #2e1800;
+  --card: #110900; --inp: #1a0e00; --scan: rgba(232,145,10,0.018);
+}
 *{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 body{background:var(--bg);color:var(--text);font-family:'Share Tech Mono',monospace;min-height:100vh;transition:background .3s,color .3s;}
@@ -903,19 +910,28 @@ let aiAnalysis=null;
 // ═══════════════════════════════════════════
 setInterval(()=>document.getElementById('clk').textContent=new Date().toLocaleTimeString('pt-BR'),1000);
 
+const _themes=['dark','light','vintage'];
+const _themeIco={dark:'sun',light:'sunset',vintage:'moon'};
+const _themeLbl={dark:'LIGHT',light:'VINTAGE',vintage:'DARK'};
+
 (function(){
   const t=localStorage.getItem('theme')||'dark';
   document.documentElement.setAttribute('data-theme',t);
-  if(t!=='dark'){document.getElementById('themeIco').setAttribute('data-lucide','moon');document.getElementById('themeTxt').textContent='DARK';}
+  if(t!=='dark'){
+    document.getElementById('themeIco').setAttribute('data-lucide',_themeIco[t]||'sun');
+    document.getElementById('themeTxt').textContent=_themeLbl[t]||'LIGHT';
+  }
 })();
 
 function toggleTheme(){
-  const h=document.documentElement,d=h.getAttribute('data-theme')==='dark';
-  h.setAttribute('data-theme',d?'light':'dark');
-  document.getElementById('themeIco').setAttribute('data-lucide',d?'moon':'sun');
-  document.getElementById('themeTxt').textContent=d?'DARK':'LIGHT';
+  const h=document.documentElement;
+  const cur=h.getAttribute('data-theme')||'dark';
+  const next=_themes[(_themes.indexOf(cur)+1)%_themes.length];
+  h.setAttribute('data-theme',next);
+  document.getElementById('themeIco').setAttribute('data-lucide',_themeIco[next]);
+  document.getElementById('themeTxt').textContent=_themeLbl[next];
   lucide.createIcons();
-  localStorage.setItem('theme',d?'light':'dark');
+  localStorage.setItem('theme',next);
 }
 
 // ═══════════════════════════════════════════
