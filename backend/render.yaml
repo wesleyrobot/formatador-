@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: contactprocessor-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false          # preencher manualmente no painel do Render
+      - key: ANTHROPIC_API_KEY
+        sync: false          # preencher manualmente no painel do Render
+      - key: ALLOWED_ORIGINS
+        value: "*"           # trocar pelo domínio do Netlify após o deploy
+      - key: STORAGE_DIR
+        value: /tmp/contactprocessor_zips

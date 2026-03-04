@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CONTACT PROCESSOR v3 — AI</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
+// ═══════════════════════════════════════════
+// DEEP LEARNING ENGINE
+// ═══════════════════════════════════════════
+function getMemory(){try{return JSON.parse(localStorage.getItem('cp_ml')||'{}')||{};}catch(e){return{};}}
+function saveMemory(m){try{localStorage.setItem('cp_ml',JSON.stringify(m));}catch(e){}}
+
+function learnFromSession(data){
+  const mem=getMemory();
+  if(!mem.sessions)mem.sessions=0;
+  if(!mem.patterns)mem.patterns={};
+  if(!mem.fixes)mem.fixes={comma:0,emoji:0,dup:0,fix55:0,header:0};
+  if(!mem.log)mem.log=[];
+  if(!mem.totalProcessed)mem.totalProcessed=0;
+  if(!mem.totalValid)mem.totalValid=0;
+
+  mem.sessions++;
+  mem.totalProcessed+=data.total||0;
+  mem.totalValid+=data.valid||0;
+  if(data.fixedComma)mem.fixes.comma+=data.fixedComma;
+  if(data.fixedEmoji)mem.fixes.emoji+=data.fixedEmoji;
+  if(data.dups)mem.fixes.dup+=data.dups;
+  if(data.fix55)mem.fixes.fix55+=data.fix55;
+  if(data.hadHeader)mem.fixes.header++;
+
+  // Learn number patterns from valid contacts
+  if(data.sampleNumbers){
+    data.sampleNumbers.forEach(num=>{
+      const d=num.replace(/\D/g,'');
+      if(d.length>=10&&d.length<=13){
+        const prefix=d.slice(0,4);
+        mem.patterns[prefix]=(mem.patterns[prefix]||0)+1;
+      }
+    });
+  }
+
+  mem.log.unshift({date:new Date().toISOString(),msg:data.msg});
+  mem.log=mem.log.slice(0,50);
+  saveMemory(mem);
+}
+
+function renderDLStats(){
+  const mem=getMemory();
+  const patterns=Object.keys(mem.patterns||{}).length;
+  const sessions=mem.sessions||0;
+  const fixes=Object.values(mem.fixes||{}).reduce((a,b)=>a+b,0);
+  const acc=mem.totalProcessed>0?Math.round((mem.totalValid/mem.totalProcessed)*100):0;
+
+  document.getElementById('dlPatterns').textContent=patterns;
+  document.getElementById('dlSessions').textContent=sessions;
+  document.getElementById('dlFixes').textContent=fixes;
+  document.getElementById('dlAccuracy').textContent=acc+'%';
+
+  // Render top patterns
+  const sorted=Object.entries(mem.patterns||{}).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  document.getElementById('dlPatternList').innerHTML=sorted.length?sorted.map(([p,c])=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:3px;font-size:10px">
+      <span style="color:var(--cyan);font-family:Orbitron,monospace">${p}...</span>
+      <div style="flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden">
+        <div style="height:100%;background:var(--g);width:${Math.min(100,c*5)}%;box-shadow:0 0 4px var(--g)"></div>
+      </div>
+      <span style="color:var(--dim)">${c}x</span>
+    </div>`).join(''):'<div style="color:var(--dim);font-size:10px;text-align:center;padding:20px">Nenhum padrão aprendido ainda</div>';
+
+  // Render log
+  const log=document.getElementById('dlLog');
+  const entries=mem.log||[];
+  log.innerHTML=entries.length?entries.map(e=>`<div class="ll"><span class="lt">${new Date(e.date).toLocaleString('pt-BR')}</span><span class="lai">${e.msg}</span></div>`).join(''):'<div class="ll"><span class="ldm">Nenhum log ainda</span></div>';
+}
+
+async function runDeepAnalysis(){
+  const mem=getMemory();
+  const hist=JSON.parse(localStorage.getItem('cp_h')||'[]');
+
+  if(hist.length===0&&(mem.sessions||0)===0){
+    const chat=document.getElementById('dlChat');
+    const d=document.createElement('div');d.className='msg msg-ai';
+    d.innerHTML='<span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>Ainda não há dados suficientes para treinar. Processe pelo menos um arquivo primeiro!';
+    chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
+    return;
+  }
+
+  document.getElementById('dlStatus').textContent='Treinando...';
+  document.getElementById('dlStatus').className='ai-status thinking';
+
+  const chat=document.getElementById('dlChat');
+  const typing=document.createElement('div');typing.className='typing-indicator';typing.id='dlTyping';
+  typing.innerHTML='<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  chat.appendChild(typing);chat.scrollTop=chat.scrollHeight;
+
+  const patterns=Object.entries(mem.patterns||{}).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([p,c])=>`${p}xxx (${c} ocorrências)`).join(', ');
+  const prompt=`Você é um motor de deep learning especializado em dados de contato. Analise estes dados de aprendizado acumulado e gere insights e recomendações de otimização.
+
+DADOS DE APRENDIZADO:
+- Sessões de processamento: ${mem.sessions||0}
+- Total de contatos processados: ${mem.totalProcessed||0}
+- Total de contatos válidos: ${mem.totalValid||0}
+- Taxa de aproveitamento: ${mem.totalProcessed>0?Math.round(((mem.totalValid||0)/(mem.totalProcessed||1))*100):0}%
+- Vírgulas em nomes corrigidas: ${(mem.fixes||{}).comma||0}
+- Emojis removidos: ${(mem.fixes||{}).emoji||0}
+- Duplicados removidos: ${(mem.fixes||{}).dup||0}
+- Números com +55 adicionado: ${(mem.fixes||{}).fix55||0}
+- Cabeçalhos detectados: ${(mem.fixes||{}).header||0}
+- Prefixos de número mais frequentes: ${patterns||'nenhum ainda'}
+- Histórico de sessões: ${hist.length} sessões salvas
+
+Responda em português, de forma objetiva e técnica, com:
+1. Análise do padrão dos dados (2-3 frases)
+2. Principais problemas recorrentes identificados
+3. Recomendações de configuração para os próximos processamentos
+4. Previsão de qualidade para próximos arquivos similares
+
+Seja direto e técnico como um especialista em data quality.`;
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data=await resp.json();
+    typing.remove();
+
+    const text=data.content?.[0]?.text||'Não foi possível gerar análise.';
+    const d=document.createElement('div');d.className='msg msg-ai';
+    const formatted=text.split('\n').join('<br>');d.innerHTML=`<span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>${formatted}`;
+    chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
+
+    learnFromSession({msg:'Análise de deep learning executada',total:0,valid:0});
+    renderDLStats();
+    document.getElementById('dlStatus').textContent='Treinamento concluído ✓';
+    document.getElementById('dlStatus').className='ai-status';
+  }catch(e){
+    typing.remove();
+    const d=document.createElement('div');d.className='msg msg-ai';
+    d.innerHTML=`<span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>Erro: ${e.message}`;
+    chat.appendChild(d);
+    document.getElementById('dlStatus').textContent='Erro no treinamento';
+    document.getElementById('dlStatus').className='ai-status';
+  }
+}
+
+function clearMemory(){
+  if(confirm('Resetar toda a memória de aprendizado? O sistema voltará ao zero.')){
+    localStorage.removeItem('cp_ml');
+    renderDLStats();
+    const chat=document.getElementById('dlChat');
+    const d=document.createElement('div');d.className='msg msg-sys';
+    d.textContent='Memória resetada.';
+    chat.appendChild(d);
+  }
+}
+
+// Hook into saveHist to also learn
+const _origSaveHist=saveHist;
+saveHist=function(e){
+  _origSaveHist(e);
+  learnFromSession({
+    msg:`Processados ${e.total} contatos → ${e.valid} válidos, ${e.dups} duplicados, ${e.invalid} inválidos`,
+    total:e.total, valid:e.valid, dups:e.dups,
+    sampleNumbers: contacts.filter(c=>c.status==='valid').slice(0,50).map(c=>c.numero)
+  });
+};
+
+// Init DL stats when tab opens
+const _origGoTab=goTab;
+goTab=function(id){
+  _origGoTab(id);
+  if(id==='learn') renderDLStats();
+};
+
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js">
+// ═══════════════════════════════════════════
+// DEEP LEARNING ENGINE
+// ═══════════════════════════════════════════
+function getMemory(){try{return JSON.parse(localStorage.getItem('cp_ml')||'{}')||{};}catch(e){return{};}}
+function saveMemory(m){try{localStorage.setItem('cp_ml',JSON.stringify(m));}catch(e){}}
+
+function learnFromSession(data){
+  const mem=getMemory();
+  if(!mem.sessions)mem.sessions=0;
+  if(!mem.patterns)mem.patterns={};
+  if(!mem.fixes)mem.fixes={comma:0,emoji:0,dup:0,fix55:0,header:0};
+  if(!mem.log)mem.log=[];
+  if(!mem.totalProcessed)mem.totalProcessed=0;
+  if(!mem.totalValid)mem.totalValid=0;
+
+  mem.sessions++;
+  mem.totalProcessed+=data.total||0;
+  mem.totalValid+=data.valid||0;
+  if(data.fixedComma)mem.fixes.comma+=data.fixedComma;
+  if(data.fixedEmoji)mem.fixes.emoji+=data.fixedEmoji;
+  if(data.dups)mem.fixes.dup+=data.dups;
+  if(data.fix55)mem.fixes.fix55+=data.fix55;
+  if(data.hadHeader)mem.fixes.header++;
+
+  // Learn number patterns from valid contacts
+  if(data.sampleNumbers){
+    data.sampleNumbers.forEach(num=>{
+      const d=num.replace(/\D/g,'');
+      if(d.length>=10&&d.length<=13){
+        const prefix=d.slice(0,4);
+        mem.patterns[prefix]=(mem.patterns[prefix]||0)+1;
+      }
+    });
+  }
+
+  mem.log.unshift({date:new Date().toISOString(),msg:data.msg});
+  mem.log=mem.log.slice(0,50);
+  saveMemory(mem);
+}
+
+function renderDLStats(){
+  const mem=getMemory();
+  const patterns=Object.keys(mem.patterns||{}).length;
+  const sessions=mem.sessions||0;
+  const fixes=Object.values(mem.fixes||{}).reduce((a,b)=>a+b,0);
+  const acc=mem.totalProcessed>0?Math.round((mem.totalValid/mem.totalProcessed)*100):0;
+
+  document.getElementById('dlPatterns').textContent=patterns;
+  document.getElementById('dlSessions').textContent=sessions;
+  document.getElementById('dlFixes').textContent=fixes;
+  document.getElementById('dlAccuracy').textContent=acc+'%';
+
+  // Render top patterns
+  const sorted=Object.entries(mem.patterns||{}).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  document.getElementById('dlPatternList').innerHTML=sorted.length?sorted.map(([p,c])=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:3px;font-size:10px">
+      <span style="color:var(--cyan);font-family:Orbitron,monospace">${p}...</span>
+      <div style="flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden">
+        <div style="height:100%;background:var(--g);width:${Math.min(100,c*5)}%;box-shadow:0 0 4px var(--g)"></div>
+      </div>
+      <span style="color:var(--dim)">${c}x</span>
+    </div>`).join(''):'<div style="color:var(--dim);font-size:10px;text-align:center;padding:20px">Nenhum padrão aprendido ainda</div>';
+
+  // Render log
+  const log=document.getElementById('dlLog');
+  const entries=mem.log||[];
+  log.innerHTML=entries.length?entries.map(e=>`<div class="ll"><span class="lt">${new Date(e.date).toLocaleString('pt-BR')}</span><span class="lai">${e.msg}</span></div>`).join(''):'<div class="ll"><span class="ldm">Nenhum log ainda</span></div>';
+}
+
+async function runDeepAnalysis(){
+  const mem=getMemory();
+  const hist=JSON.parse(localStorage.getItem('cp_h')||'[]');
+
+  if(hist.length===0&&(mem.sessions||0)===0){
+    const chat=document.getElementById('dlChat');
+    const d=document.createElement('div');d.className='msg msg-ai';
+    d.innerHTML='<span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>Ainda não há dados suficientes para treinar. Processe pelo menos um arquivo primeiro!';
+    chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
+    return;
+  }
+
+  document.getElementById('dlStatus').textContent='Treinando...';
+  document.getElementById('dlStatus').className='ai-status thinking';
+
+  const chat=document.getElementById('dlChat');
+  const typing=document.createElement('div');typing.className='typing-indicator';typing.id='dlTyping';
+  typing.innerHTML='<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  chat.appendChild(typing);chat.scrollTop=chat.scrollHeight;
+
+  const patterns=Object.entries(mem.patterns||{}).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([p,c])=>`${p}xxx (${c} ocorrências)`).join(', ');
+  const prompt=`Você é um motor de deep learning especializado em dados de contato. Analise estes dados de aprendizado acumulado e gere insights e recomendações de otimização.
+
+DADOS DE APRENDIZADO:
+- Sessões de processamento: ${mem.sessions||0}
+- Total de contatos processados: ${mem.totalProcessed||0}
+- Total de contatos válidos: ${mem.totalValid||0}
+- Taxa de aproveitamento: ${mem.totalProcessed>0?Math.round(((mem.totalValid||0)/(mem.totalProcessed||1))*100):0}%
+- Vírgulas em nomes corrigidas: ${(mem.fixes||{}).comma||0}
+- Emojis removidos: ${(mem.fixes||{}).emoji||0}
+- Duplicados removidos: ${(mem.fixes||{}).dup||0}
+- Números com +55 adicionado: ${(mem.fixes||{}).fix55||0}
+- Cabeçalhos detectados: ${(mem.fixes||{}).header||0}
+- Prefixos de número mais frequentes: ${patterns||'nenhum ainda'}
+- Histórico de sessões: ${hist.length} sessões salvas
+
+Responda em português, de forma objetiva e técnica, com:
+1. Análise do padrão dos dados (2-3 frases)
+2. Principais problemas recorrentes identificados
+3. Recomendações de configuração para os próximos processamentos
+4. Previsão de qualidade para próximos arquivos similares
+
+Seja direto e técnico como um especialista em data quality.`;
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data=await resp.json();
+    typing.remove();
+
+    const text=data.content?.[0]?.text||'Não foi possível gerar análise.';
+    const d=document.createElement('div');d.className='msg msg-ai';
+    const formatted=text.split('\n').join('<br>');d.innerHTML=`<span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>${formatted}`;
+    chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
+
+    learnFromSession({msg:'Análise de deep learning executada',total:0,valid:0});
+    renderDLStats();
+    document.getElementById('dlStatus').textContent='Treinamento concluído ✓';
+    document.getElementById('dlStatus').className='ai-status';
+  }catch(e){
+    typing.remove();
+    const d=document.createElement('div');d.className='msg msg-ai';
+    d.innerHTML=`<span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>Erro: ${e.message}`;
+    chat.appendChild(d);
+    document.getElementById('dlStatus').textContent='Erro no treinamento';
+    document.getElementById('dlStatus').className='ai-status';
+  }
+}
+
+function clearMemory(){
+  if(confirm('Resetar toda a memória de aprendizado? O sistema voltará ao zero.')){
+    localStorage.removeItem('cp_ml');
+    renderDLStats();
+    const chat=document.getElementById('dlChat');
+    const d=document.createElement('div');d.className='msg msg-sys';
+    d.textContent='Memória resetada.';
+    chat.appendChild(d);
+  }
+}
+
+// Hook into saveHist to also learn
+const _origSaveHist=saveHist;
+saveHist=function(e){
+  _origSaveHist(e);
+  learnFromSession({
+    msg:`Processados ${e.total} contatos → ${e.valid} válidos, ${e.dups} duplicados, ${e.invalid} inválidos`,
+    total:e.total, valid:e.valid, dups:e.dups,
+    sampleNumbers: contacts.filter(c=>c.status==='valid').slice(0,50).map(c=>c.numero)
+  });
+};
+
+// Init DL stats when tab opens
+const _origGoTab=goTab;
+goTab=function(id){
+  _origGoTab(id);
+  if(id==='learn') renderDLStats();
+};
+
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js">
+// ═══════════════════════════════════════════
+// DEEP LEARNING ENGINE
+// ═══════════════════════════════════════════
+function getMemory(){try{return JSON.parse(localStorage.getItem('cp_ml')||'{}')||{};}catch(e){return{};}}
+function saveMemory(m){try{localStorage.setItem('cp_ml',JSON.stringify(m));}catch(e){}}
+
+function learnFromSession(data){
+  const mem=getMemory();
+  if(!mem.sessions)mem.sessions=0;
+  if(!mem.patterns)mem.patterns={};
+  if(!mem.fixes)mem.fixes={comma:0,emoji:0,dup:0,fix55:0,header:0};
+  if(!mem.log)mem.log=[];
+  if(!mem.totalProcessed)mem.totalProcessed=0;
+  if(!mem.totalValid)mem.totalValid=0;
+
+  mem.sessions++;
+  mem.totalProcessed+=data.total||0;
+  mem.totalValid+=data.valid||0;
+  if(data.fixedComma)mem.fixes.comma+=data.fixedComma;
+  if(data.fixedEmoji)mem.fixes.emoji+=data.fixedEmoji;
+  if(data.dups)mem.fixes.dup+=data.dups;
+  if(data.fix55)mem.fixes.fix55+=data.fix55;
+  if(data.hadHeader)mem.fixes.header++;
+
+  // Learn number patterns from valid contacts
+  if(data.sampleNumbers){
+    data.sampleNumbers.forEach(num=>{
+      const d=num.replace(/\D/g,'');
+      if(d.length>=10&&d.length<=13){
+        const prefix=d.slice(0,4);
+        mem.patterns[prefix]=(mem.patterns[prefix]||0)+1;
+      }
+    });
+  }
+
+  mem.log.unshift({date:new Date().toISOString(),msg:data.msg});
+  mem.log=mem.log.slice(0,50);
+  saveMemory(mem);
+}
+
+function renderDLStats(){
+  const mem=getMemory();
+  const patterns=Object.keys(mem.patterns||{}).length;
+  const sessions=mem.sessions||0;
+  const fixes=Object.values(mem.fixes||{}).reduce((a,b)=>a+b,0);
+  const acc=mem.totalProcessed>0?Math.round((mem.totalValid/mem.totalProcessed)*100):0;
+
+  document.getElementById('dlPatterns').textContent=patterns;
+  document.getElementById('dlSessions').textContent=sessions;
+  document.getElementById('dlFixes').textContent=fixes;
+  document.getElementById('dlAccuracy').textContent=acc+'%';
+
+  // Render top patterns
+  const sorted=Object.entries(mem.patterns||{}).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  document.getElementById('dlPatternList').innerHTML=sorted.length?sorted.map(([p,c])=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:3px;font-size:10px">
+      <span style="color:var(--cyan);font-family:Orbitron,monospace">${p}...</span>
+      <div style="flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden">
+        <div style="height:100%;background:var(--g);width:${Math.min(100,c*5)}%;box-shadow:0 0 4px var(--g)"></div>
+      </div>
+      <span style="color:var(--dim)">${c}x</span>
+    </div>`).join(''):'<div style="color:var(--dim);font-size:10px;text-align:center;padding:20px">Nenhum padrão aprendido ainda</div>';
+
+  // Render log
+  const log=document.getElementById('dlLog');
+  const entries=mem.log||[];
+  log.innerHTML=entries.length?entries.map(e=>`<div class="ll"><span class="lt">${new Date(e.date).toLocaleString('pt-BR')}</span><span class="lai">${e.msg}</span></div>`).join(''):'<div class="ll"><span class="ldm">Nenhum log ainda</span></div>';
+}
+
+async function runDeepAnalysis(){
+  const mem=getMemory();
+  const hist=JSON.parse(localStorage.getItem('cp_h')||'[]');
+
+  if(hist.length===0&&(mem.sessions||0)===0){
+    const chat=document.getElementById('dlChat');
+    const d=document.createElement('div');d.className='msg msg-ai';
+    d.innerHTML='<span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>Ainda não há dados suficientes para treinar. Processe pelo menos um arquivo primeiro!';
+    chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
+    return;
+  }
+
+  document.getElementById('dlStatus').textContent='Treinando...';
+  document.getElementById('dlStatus').className='ai-status thinking';
+
+  const chat=document.getElementById('dlChat');
+  const typing=document.createElement('div');typing.className='typing-indicator';typing.id='dlTyping';
+  typing.innerHTML='<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  chat.appendChild(typing);chat.scrollTop=chat.scrollHeight;
+
+  const patterns=Object.entries(mem.patterns||{}).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([p,c])=>`${p}xxx (${c} ocorrências)`).join(', ');
+  const prompt=`Você é um motor de deep learning especializado em dados de contato. Analise estes dados de aprendizado acumulado e gere insights e recomendações de otimização.
+
+DADOS DE APRENDIZADO:
+- Sessões de processamento: ${mem.sessions||0}
+- Total de contatos processados: ${mem.totalProcessed||0}
+- Total de contatos válidos: ${mem.totalValid||0}
+- Taxa de aproveitamento: ${mem.totalProcessed>0?Math.round(((mem.totalValid||0)/(mem.totalProcessed||1))*100):0}%
+- Vírgulas em nomes corrigidas: ${(mem.fixes||{}).comma||0}
+- Emojis removidos: ${(mem.fixes||{}).emoji||0}
+- Duplicados removidos: ${(mem.fixes||{}).dup||0}
+- Números com +55 adicionado: ${(mem.fixes||{}).fix55||0}
+- Cabeçalhos detectados: ${(mem.fixes||{}).header||0}
+- Prefixos de número mais frequentes: ${patterns||'nenhum ainda'}
+- Histórico de sessões: ${hist.length} sessões salvas
+
+Responda em português, de forma objetiva e técnica, com:
+1. Análise do padrão dos dados (2-3 frases)
+2. Principais problemas recorrentes identificados
+3. Recomendações de configuração para os próximos processamentos
+4. Previsão de qualidade para próximos arquivos similares
+
+Seja direto e técnico como um especialista em data quality.`;
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data=await resp.json();
+    typing.remove();
+
+    const text=data.content?.[0]?.text||'Não foi possível gerar análise.';
+    const d=document.createElement('div');d.className='msg msg-ai';
+    const formatted=text.split('\n').join('<br>');d.innerHTML=`<span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>${formatted}`;
+    chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
+
+    learnFromSession({msg:'Análise de deep learning executada',total:0,valid:0});
+    renderDLStats();
+    document.getElementById('dlStatus').textContent='Treinamento concluído ✓';
+    document.getElementById('dlStatus').className='ai-status';
+  }catch(e){
+    typing.remove();
+    const d=document.createElement('div');d.className='msg msg-ai';
+    d.innerHTML=`<span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>Erro: ${e.message}`;
+    chat.appendChild(d);
+    document.getElementById('dlStatus').textContent='Erro no treinamento';
+    document.getElementById('dlStatus').className='ai-status';
+  }
+}
+
+function clearMemory(){
+  if(confirm('Resetar toda a memória de aprendizado? O sistema voltará ao zero.')){
+    localStorage.removeItem('cp_ml');
+    renderDLStats();
+    const chat=document.getElementById('dlChat');
+    const d=document.createElement('div');d.className='msg msg-sys';
+    d.textContent='Memória resetada.';
+    chat.appendChild(d);
+  }
+}
+
+// Hook into saveHist to also learn
+const _origSaveHist=saveHist;
+saveHist=function(e){
+  _origSaveHist(e);
+  learnFromSession({
+    msg:`Processados ${e.total} contatos → ${e.valid} válidos, ${e.dups} duplicados, ${e.invalid} inválidos`,
+    total:e.total, valid:e.valid, dups:e.dups,
+    sampleNumbers: contacts.filter(c=>c.status==='valid').slice(0,50).map(c=>c.numero)
+  });
+};
+
+// Init DL stats when tab opens
+const _origGoTab=goTab;
+goTab=function(id){
+  _origGoTab(id);
+  if(id==='learn') renderDLStats();
+};
+
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+:root[data-theme="dark"] {
+  --g: #00ff41; --gd: #00aa2b; --gdk: #002a0a; --gborder: #003a0f;
+  --bg: #040804; --bg2: #080d08; --bg3: #0d150d;
+  --red: #ff3333; --yellow: #ffd700; --cyan: #00e5ff; --purple: #bf5fff;
+  --text: #c8e6c9; --dim: #4a6a4a; --border: #1a2e1a;
+  --card: #080d08; --inp: #0d150d; --scan: rgba(0,255,65,0.012);
+}
+:root[data-theme="light"] {
+  --g: #1b5e20; --gd: #2e7d32; --gdk: #e8f5e9; --gborder: #a5d6a7;
+  --bg: #f1f8e9; --bg2: #ffffff; --bg3: #f9fbe7;
+  --red: #c62828; --yellow: #e65100; --cyan: #006064; --purple: #6a1b9a;
+  --text: #1b5e20; --dim: #558b2f; --border: #c5e1a5;
+  --card: #ffffff; --inp: #f9fbe7; --scan: transparent;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Share Tech Mono',monospace;min-height:100vh;transition:background .3s,color .3s;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,var(--scan) 2px,var(--scan) 4px);pointer-events:none;z-index:998;}
+
+/* ── HEADER ── */
+.hdr{position:sticky;top:0;z-index:100;background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;gap:16px;}
+.logo{font-family:'Orbitron',monospace;font-weight:900;font-size:17px;letter-spacing:3px;color:var(--g);text-shadow:0 0 20px rgba(0,255,65,.4);}
+.logo em{color:var(--cyan);font-style:normal;}
+.logo sup{font-size:9px;letter-spacing:2px;color:var(--gd);vertical-align:super;}
+.hdr-r{margin-left:auto;display:flex;gap:10px;align-items:center;}
+.live{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--gd);}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--g);box-shadow:0 0 6px var(--g);animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.clk{font-size:11px;color:var(--dim);}
+.tbtn{background:none;border:1px solid var(--border);color:var(--dim);font-family:'Share Tech Mono',monospace;font-size:10px;padding:5px 12px;cursor:pointer;border-radius:3px;transition:all .2s;letter-spacing:1px;}
+.tbtn:hover,.tbtn.act{border-color:var(--g);color:var(--g);}
+
+/* ── TABS ── */
+.tabs{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:0;}
+.tab{padding:10px 18px;background:none;border:none;color:var(--dim);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;}
+.tab.on{color:var(--g);border-bottom-color:var(--g);}
+
+/* ── LAYOUT ── */
+.wrap{max-width:1300px;margin:0 auto;padding:24px 20px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;}
+.fw{grid-column:1/-1;}
+.tc{display:none;}.tc.on{display:block;}
+
+/* ── PANEL ── */
+.pnl{border:1px solid var(--border);background:var(--bg2);border-radius:6px;overflow:hidden;}
+.ph{background:var(--bg3);padding:8px 14px;font-size:9px;color:var(--dim);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;letter-spacing:2px;text-transform:uppercase;}
+.ph::before{content:'▶';color:var(--g);font-size:7px;}
+.ph-r{margin-left:auto;display:flex;gap:6px;}
+.pb{padding:16px;}
+
+/* ── DROP ZONE ── */
+.dz{border:2px dashed var(--border);border-radius:6px;padding:30px 20px;text-align:center;cursor:pointer;transition:all .25s;position:relative;}
+.dz:hover,.dz.over{border-color:var(--g);background:rgba(0,255,65,.03);box-shadow:inset 0 0 20px rgba(0,255,65,.03);}
+.dz input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.dz-ico{font-size:28px;margin-bottom:8px;display:block;}
+.dz h3{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:3px;margin-bottom:5px;color:var(--g);}
+.dz p{font-size:10px;color:var(--dim);line-height:1.7;}
+.fl{margin-top:10px;display:flex;flex-direction:column;gap:5px;max-height:150px;overflow-y:auto;}
+.fi{display:flex;align-items:center;gap:7px;padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;font-size:10px;}
+.fi .fn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.fi .fs{color:var(--dim);font-size:9px;}
+.fi .rm{background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;opacity:.5;}
+.fi .rm:hover{opacity:1;}
+
+/* ── FORM ── */
+.lbl{display:block;font-size:9px;color:var(--dim);letter-spacing:1px;margin-bottom:4px;text-transform:uppercase;}
+.row{margin-bottom:12px;}
+input[type=number],input[type=text],select{width:100%;background:var(--inp);border:1px solid var(--border);color:var(--text);padding:7px 10px;font-family:'Share Tech Mono',monospace;font-size:11px;border-radius:4px;outline:none;transition:border-color .2s;}
+input:focus,select:focus{border-color:var(--g);box-shadow:0 0 8px rgba(0,255,65,.07);}
+.togs{display:flex;gap:5px;flex-wrap:wrap;}
+.tog{padding:4px 11px;background:var(--bg3);border:1px solid var(--border);color:var(--dim);font-family:'Share Tech Mono',monospace;font-size:9px;cursor:pointer;border-radius:3px;transition:all .2s;letter-spacing:1px;}
+.tog.on{background:rgba(0,255,65,.08);border-color:var(--g);color:var(--g);}
+
+/* ── BUTTONS ── */
+.btn{width:100%;padding:11px;background:transparent;border:2px solid var(--g);color:var(--g);font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:3px;cursor:pointer;border-radius:4px;transition:all .3s;}
+.btn:hover:not(:disabled){background:var(--g);color:var(--bg);box-shadow:0 0 20px rgba(0,255,65,.25);}
+.btn:disabled{opacity:.25;cursor:not-allowed;}
+.btn-ai{border-color:var(--purple);color:var(--purple);}
+.btn-ai:hover:not(:disabled){background:var(--purple);color:#fff;box-shadow:0 0 20px rgba(191,95,255,.3);}
+.btn-sm{padding:5px 12px;font-size:9px;letter-spacing:2px;width:auto;border-width:1px;}
+.btn-cyan{border-color:var(--cyan);color:var(--cyan);}
+.btn-cyan:hover:not(:disabled){background:var(--cyan);color:var(--bg);}
+.btn-red{border-color:var(--red);color:var(--red);}
+.btn-red:hover{background:var(--red);color:#fff;}
+.mt{margin-top:10px;}
+
+/* ── PROGRESS ── */
+.pgw{margin-top:12px;}
+.pglbl{font-size:9px;color:var(--dim);margin-bottom:4px;display:flex;justify-content:space-between;}
+.pgbar{height:3px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-bottom:5px;}
+.pgfill{height:100%;background:linear-gradient(90deg,var(--gd),var(--g));transition:width .3s;box-shadow:0 0 5px var(--g);}
+.pgfile{font-size:9px;color:var(--dim);}
+
+/* ── STATS ── */
+.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
+.st{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:10px;text-align:center;}
+.sv{font-family:'Orbitron',monospace;font-size:19px;font-weight:700;color:var(--g);text-shadow:0 0 10px rgba(0,255,65,.35);display:block;transition:all .3s;}
+.sl{font-size:8px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-top:2px;display:block;}
+.st.w .sv{color:var(--yellow);text-shadow:0 0 10px rgba(255,215,0,.35);}
+.st.e .sv{color:var(--red);text-shadow:0 0 10px rgba(255,51,51,.35);}
+.st.i .sv{color:var(--cyan);text-shadow:0 0 10px rgba(0,229,255,.35);}
+
+/* ── TERMINAL ── */
+.term{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:10px;font-size:10px;line-height:1.9;max-height:200px;overflow-y:auto;}
+.term::-webkit-scrollbar{width:3px;}
+.term::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.ll{display:flex;gap:7px;}
+.lt{color:var(--dim);flex-shrink:0;}
+.lok{color:var(--g);}
+.lwn{color:var(--yellow);}
+.ler{color:var(--red);}
+.lin{color:var(--cyan);}
+.ldm{color:var(--dim);}
+.lai{color:var(--purple);}
+
+/* ── AI ROBOT ── */
+.ai-panel{border:1px solid rgba(191,95,255,.3);background:var(--bg2);border-radius:6px;overflow:hidden;}
+.ai-header{background:linear-gradient(90deg,rgba(191,95,255,.08),rgba(0,229,255,.05));padding:10px 14px;border-bottom:1px solid rgba(191,95,255,.2);display:flex;align-items:center;gap:10px;}
+.ai-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;box-shadow:0 0 12px rgba(191,95,255,.4);animation:aiGlow 3s infinite;}
+@keyframes aiGlow{0%,100%{box-shadow:0 0 12px rgba(191,95,255,.4)}50%{box-shadow:0 0 20px rgba(191,95,255,.7),0 0 30px rgba(0,229,255,.3)}}
+.ai-info{flex:1;}
+.ai-name{font-family:'Orbitron',monospace;font-size:11px;color:var(--purple);letter-spacing:2px;}
+.ai-status{font-size:9px;color:var(--dim);margin-top:1px;}
+.ai-status.thinking{color:var(--cyan);animation:blink 1s infinite;}
+.ai-chat{padding:14px;max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;}
+.ai-chat::-webkit-scrollbar{width:3px;}
+.ai-chat::-webkit-scrollbar-thumb{background:rgba(191,95,255,.3);border-radius:2px;}
+.msg{max-width:85%;padding:9px 13px;border-radius:6px;font-size:11px;line-height:1.7;animation:msgIn .3s ease;}
+@keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.msg-ai{background:rgba(191,95,255,.08);border:1px solid rgba(191,95,255,.2);color:var(--text);align-self:flex-start;border-bottom-left-radius:2px;}
+.msg-ai .msg-ico{color:var(--purple);font-size:9px;letter-spacing:1px;margin-bottom:4px;display:block;}
+.msg-sys{background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.15);color:var(--cyan);align-self:center;font-size:9px;text-align:center;padding:6px 14px;border-radius:20px;}
+.msg-ok{background:rgba(0,255,65,.05);border:1px solid rgba(0,255,65,.15);color:var(--g);align-self:center;font-size:9px;text-align:center;padding:6px 14px;border-radius:20px;}
+.typing-indicator{display:flex;gap:4px;align-items:center;padding:10px 14px;}
+.typing-dot{width:5px;height:5px;border-radius:50%;background:var(--purple);animation:typing .9s infinite;}
+.typing-dot:nth-child(2){animation-delay:.2s;}
+.typing-dot:nth-child(3){animation-delay:.4s;}
+@keyframes typing{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-5px);opacity:1}}
+.ai-result{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:10px;margin-top:6px;font-size:10px;}
+.ai-result .ar-title{color:var(--cyan);font-size:9px;letter-spacing:1px;margin-bottom:6px;text-transform:uppercase;}
+.ai-result table{width:100%;border-collapse:collapse;}
+.ai-result td{padding:3px 8px;border-bottom:1px solid var(--border);font-size:10px;}
+.ai-result td:first-child{color:var(--dim);width:40%;}
+
+/* ── PREVIEW TABLE ── */
+.ptbl{width:100%;border-collapse:collapse;font-size:10px;}
+.ptbl th{background:var(--bg3);color:var(--dim);padding:7px 12px;text-align:left;font-size:8px;letter-spacing:2px;text-transform:uppercase;border-bottom:1px solid var(--border);position:sticky;top:0;}
+.ptbl td{padding:6px 12px;border-bottom:1px solid var(--border);}
+.ptbl tr:hover td{background:rgba(0,255,65,.02);}
+.ptbl-wrap{overflow-x:auto;max-height:460px;overflow-y:auto;}
+.ptbl-wrap::-webkit-scrollbar{width:4px;height:4px;}
+.ptbl-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.bdg{display:inline-block;padding:2px 6px;border-radius:3px;font-size:8px;letter-spacing:1px;}
+.bok{background:rgba(0,255,65,.08);color:var(--g);border:1px solid rgba(0,255,65,.2);}
+.bwn{background:rgba(255,215,0,.08);color:var(--yellow);border:1px solid rgba(255,215,0,.2);}
+.ber{background:rgba(255,51,51,.08);color:var(--red);border:1px solid rgba(255,51,51,.2);}
+.pmeta{display:flex;gap:12px;align-items:center;margin-bottom:10px;font-size:10px;color:var(--dim);flex-wrap:wrap;}
+
+/* ── HISTORY ── */
+.hi{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:12px;margin-bottom:10px;}
+.hi-hdr{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.hi-dt{font-size:9px;color:var(--dim);}
+.hi-ttl{font-size:11px;color:var(--g);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hi-sts{display:flex;gap:12px;font-size:9px;}
+.hi-st{color:var(--dim);}
+.hi-st span{color:var(--text);}
+.hi-empty{text-align:center;padding:40px;color:var(--dim);font-size:11px;}
+
+@keyframes countUp{from{transform:scale(1.25)}to{transform:scale(1)}}
+.ca{animation:countUp .3s ease;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+@media(max-width:768px){.g2,.g3{grid-template-columns:1fr;}.fw{grid-column:1;}.sg{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="logo">CONTACT<em>_</em>PROCESSOR <sup>v3 AI</sup></div>
+  <div class="hdr-r">
+    <span class="live"><span class="dot"></span> ONLINE</span>
+    <span class="clk" id="clk"></span>
+    <button class="tbtn" onclick="toggleTheme()">☀ LIGHT</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab on" onclick="goTab('proc')">⚙ PROCESSAR</button>
+  <button class="tab" onclick="goTab('prev')">👁 PREVIEW</button>
+  <button class="tab" onclick="goTab('hist')">📋 HISTÓRICO</button>
+  <button class="tab" onclick="goTab('learn')">🧠 APRENDIZADO</button>
+</div>
+
+<!-- ══ TAB: PROCESSAR ══ -->
+<div class="tc on" id="tab-proc">
+<div class="wrap">
+<div class="g2">
+
+  <!-- UPLOAD -->
+  <div class="pnl">
+    <div class="ph">Upload de Arquivos</div>
+    <div class="pb">
+      <div class="dz" id="dz">
+        <input type="file" id="fi" multiple accept=".csv,.xlsx,.xls,.txt,.zip">
+        <span class="dz-ico">📂</span>
+        <h3>ARRASTAR ARQUIVOS AQUI</h3>
+        <p>ou clique para selecionar<br>CSV · XLSX · ZIP · TXT</p>
+      </div>
+      <div class="fl" id="fl"></div>
+    </div>
+  </div>
+
+  <!-- CONFIG -->
+  <div class="pnl">
+    <div class="ph">Configurações</div>
+    <div class="pb">
+      <div class="row">
+        <label class="lbl">Contatos por arquivo</label>
+        <input type="number" id="splitSize" value="49" min="1" max="1000">
+      </div>
+      <div class="row">
+        <label class="lbl">Nome padrão (sem nome)</label>
+        <input type="text" id="defName" value="Contato">
+      </div>
+      <div class="row">
+        <label class="lbl">Opções</label>
+        <div class="togs">
+          <button class="tog on" id="t-emoji" onclick="tOpt(this,'emoji')">Remover Emojis</button>
+          <button class="tog on" id="t-dup" onclick="tOpt(this,'dup')">Remover Duplicados</button>
+          <button class="tog on" id="t-val" onclick="tOpt(this,'val')">Validar Números</button>
+          <button class="tog on" id="t-fix55" onclick="tOpt(this,'fix55')">Auto +55</button>
+          <button class="tog on" id="t-fixc" onclick="tOpt(this,'fixc')">Corrigir Vírgulas</button>
+        </div>
+      </div>
+      <button class="btn btn-ai mt" id="btnAI" onclick="runAI()" disabled>🤖 ANALISAR COM IA</button>
+      <button class="btn mt" id="btnProc" onclick="processFiles()" disabled style="margin-top:7px">▶ PROCESSAR</button>
+      <div class="pgw" id="pgw" style="display:none">
+        <div class="pglbl"><span id="pgLbl">Processando...</span><span id="pgPct">0%</span></div>
+        <div class="pgbar"><div class="pgfill" id="pgF" style="width:0%"></div></div>
+        <div class="pgfile" id="pgFile"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI ROBOT -->
+  <div class="ai-panel fw" id="aiPanel">
+    <div class="ai-header">
+      <div class="ai-avatar">🤖</div>
+      <div class="ai-info">
+        <div class="ai-name">EXCEL · SPECIALIST · AI</div>
+        <div class="ai-status" id="aiStatus">Aguardando arquivos...</div>
+      </div>
+      <div class="ph-r">
+        <span style="font-size:9px;color:var(--dim);letter-spacing:1px">POWERED BY CLAUDE</span>
+      </div>
+    </div>
+    <div class="ai-chat" id="aiChat">
+      <div class="msg msg-ai">
+        <span class="msg-ico">🤖 EXCEL SPECIALIST</span>
+        Olá! Sou o especialista em planilhas com IA. Envie seus arquivos e clique em <strong>🤖 ANALISAR COM IA</strong> para eu inspecionar a estrutura, detectar colunas bagunçadas, identificar problemas e organizar tudo automaticamente antes do processamento.
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="pnl fw">
+    <div class="ph">
+      Relatório
+      <div class="ph-r">
+        <button class="btn btn-sm btn-cyan" id="btnDL" onclick="dlZip()" style="display:none">⬇ BAIXAR ZIP</button>
+        <button class="btn btn-sm" id="btnPV" onclick="goTab('prev')" style="display:none">👁 PREVIEW</button>
+      </div>
+    </div>
+    <div class="pb">
+      <div class="sg">
+        <div class="st"><span class="sv" id="sTot">0</span><span class="sl">Total Bruto</span></div>
+        <div class="st"><span class="sv" id="sVal">0</span><span class="sl">Válidos</span></div>
+        <div class="st w"><span class="sv" id="sDup">0</span><span class="sl">Duplicados</span></div>
+        <div class="st e"><span class="sv" id="sErr">0</span><span class="sl">Inválidos</span></div>
+      </div>
+      <div style="display:flex;gap:20px;margin-bottom:12px;flex-wrap:wrap">
+        <div><label class="lbl">Arquivos Gerados</label><div style="font-family:Orbitron,monospace;font-size:20px;color:var(--cyan);text-shadow:0 0 8px rgba(0,229,255,.4)" id="sFiles">0</div></div>
+        <div><label class="lbl">Contatos Finais</label><div style="font-family:Orbitron,monospace;font-size:20px;color:var(--g);text-shadow:0 0 8px rgba(0,255,65,.4)" id="sFinal">0</div></div>
+      </div>
+      <div class="term" id="term"><div class="ll"><span class="ldm">Aguardando arquivos...</span></div></div>
+    </div>
+  </div>
+
+</div>
+</div>
+</div>
+
+<!-- ══ TAB: PREVIEW ══ -->
+<div class="tc" id="tab-prev">
+<div class="wrap">
+  <div class="pnl">
+    <div class="ph">
+      Preview de Contatos
+      <div class="ph-r">
+        <button class="btn btn-sm btn-cyan" onclick="dlZip()">⬇ BAIXAR ZIP</button>
+        <button class="btn btn-sm btn-red" onclick="clearPrev()">✕ LIMPAR</button>
+      </div>
+    </div>
+    <div class="pb">
+      <div class="pmeta" id="pmeta">Nenhum dado processado ainda.</div>
+      <div class="row"><input type="text" id="srch" placeholder="Buscar nome ou número..." oninput="filterPrev()"></div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+        <button class="tog on" id="fv" onclick="tFilter(this,'valid')">✓ Válidos</button>
+        <button class="tog on" id="fw" onclick="tFilter(this,'warn')">⚠ Avisos</button>
+        <button class="tog on" id="fe" onclick="tFilter(this,'err')">✗ Inválidos</button>
+      </div>
+      <div class="ptbl-wrap">
+        <table class="ptbl"><thead><tr><th>#</th><th>Nome</th><th>Número</th><th>Status</th><th>Arquivo</th></tr></thead>
+        <tbody id="ptbody"><tr><td colspan="5" style="text-align:center;color:var(--dim);padding:30px">Processe arquivos para ver o preview</td></tr></tbody></table>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ TAB: HISTÓRICO ══ -->
+<div class="tc" id="tab-hist">
+<div class="wrap">
+  <div class="pnl">
+    <div class="ph">Histórico<div class="ph-r"><button class="btn btn-sm btn-red" onclick="clearHist()">✕ LIMPAR</button></div></div>
+    <div class="pb" id="histBody"></div>
+  </div>
+</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// CONFIG — altere para a URL do seu backend
+// ═══════════════════════════════════════════
+const API_URL = (window.location.hostname==='localhost'||window.location.hostname==='127.0.0.1')
+  ? 'http://localhost:8000'
+  : 'https://SEU-BACKEND.railway.app'; // <-- ALTERE APÓS O DEPLOY
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let files=[], contacts=[], currentSessionId=null;
+let opts={emoji:true,dup:true,val:true,fix55:true,fixc:true};
+let filters={valid:true,warn:true,err:true};
+let aiAnalysis=null;
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+setInterval(()=>document.getElementById('clk').textContent=new Date().toLocaleTimeString('pt-BR'),1000);
+
+(function(){
+  const t=localStorage.getItem('theme')||'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  document.querySelector('.tbtn').textContent=t==='dark'?'☀ LIGHT':'🌙 DARK';
+})();
+
+function toggleTheme(){
+  const h=document.documentElement,d=h.getAttribute('data-theme')==='dark';
+  h.setAttribute('data-theme',d?'light':'dark');
+  document.querySelector('.tbtn').textContent=d?'🌙 DARK':'☀ LIGHT';
+  localStorage.setItem('theme',d?'light':'dark');
+}
+
+// ═══════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════
+function goTab(id){
+  document.querySelectorAll('.tc').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById('tab-'+id).classList.add('on');
+  const idx={proc:0,prev:1,hist:2,learn:3}[id];
+  document.querySelectorAll('.tab')[idx].classList.add('on');
+  if(id==='hist') renderHist();
+}
+
+// ═══════════════════════════════════════════
+// FILES
+// ═══════════════════════════════════════════
+const dz=document.getElementById('dz'),fi=document.getElementById('fi');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');addFiles([...e.dataTransfer.files]);});
+fi.addEventListener('change',()=>addFiles([...fi.files]));
+
+function addFiles(nf){
+  nf.forEach(f=>{if(!files.find(x=>x.name===f.name&&x.size===f.size))files.push(f);});
+  renderFL();
+  const has=files.length>0;
+  document.getElementById('btnAI').disabled=!has;
+  document.getElementById('btnProc').disabled=!has;
+}
+function removeFile(i){files.splice(i,1);renderFL();const has=files.length>0;document.getElementById('btnAI').disabled=!has;document.getElementById('btnProc').disabled=!has;}
+function renderFL(){
+  const ico={csv:'📄',xlsx:'📊',xls:'📊',zip:'🗜️',txt:'📝'};
+  document.getElementById('fl').innerHTML=files.map((f,i)=>{
+    const ext=f.name.split('.').pop().toLowerCase();
+    const sz=f.size>1048576?(f.size/1048576).toFixed(1)+'MB':Math.round(f.size/1024)+'KB';
+    return`<div class="fi"><span>${ico[ext]||'📁'}</span><span class="fn">${f.name}</span><span class="fs">${sz}</span><button class="rm" onclick="removeFile(${i})">✕</button></div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+// OPTIONS
+// ═══════════════════════════════════════════
+function tOpt(b,k){b.classList.toggle('on');opts[k]=b.classList.contains('on');}
+function tFilter(b,k){b.classList.toggle('on');filters[k]=b.classList.contains('on');filterPrev();}
+
+// ═══════════════════════════════════════════
+// LOG
+// ═══════════════════════════════════════════
+function log(msg,t='ok'){
+  const el=document.getElementById('term');
+  const tm=new Date().toLocaleTimeString('pt-BR');
+  const d=document.createElement('div');d.className='ll';
+  d.innerHTML=`<span class="lt">[${tm}]</span><span class="l${t}">${msg}</span>`;
+  el.appendChild(d);el.scrollTop=el.scrollHeight;
+}
+function clrLog(){document.getElementById('term').innerHTML='';}
+
+// ═══════════════════════════════════════════
+// PROGRESS
+// ═══════════════════════════════════════════
+function setProg(pct,lbl,fi=''){
+  document.getElementById('pgF').style.width=pct+'%';
+  document.getElementById('pgPct').textContent=pct+'%';
+  document.getElementById('pgLbl').textContent=lbl;
+  document.getElementById('pgFile').textContent=fi;
+}
+function animS(id,v){const e=document.getElementById(id);e.textContent=v;e.classList.remove('ca');void e.offsetWidth;e.classList.add('ca');}
+
+// ═══════════════════════════════════════════
+// AI CHAT
+// ═══════════════════════════════════════════
+function aiMsg(text,type='ai'){
+  const chat=document.getElementById('aiChat');
+  const cls=type==='sys'?'msg-sys':type==='ok'?'msg-ok':'msg-ai';
+  const ico=type==='ai'?'<span class="msg-ico">🤖 EXCEL SPECIALIST</span>':'';
+  const d=document.createElement('div');
+  d.className=`msg ${cls}`;
+  d.innerHTML=ico+text;
+  chat.appendChild(d);
+  chat.scrollTop=chat.scrollHeight;
+  return d;
+}
+
+function aiTyping(){
+  const chat=document.getElementById('aiChat');
+  const d=document.createElement('div');
+  d.className='typing-indicator';d.id='typing';
+  d.innerHTML='<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
+}
+function aiStopTyping(){const e=document.getElementById('typing');if(e)e.remove();}
+
+function setAiStatus(txt,thinking=false){
+  const el=document.getElementById('aiStatus');
+  el.textContent=txt;
+  el.className='ai-status'+(thinking?' thinking':'');
+}
+
+// ═══════════════════════════════════════════
+// PARSE HELPERS
+// ═══════════════════════════════════════════
+async function parseRaw(file){
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(ext==='csv'||ext==='txt') return await parseCSV(file);
+  if(ext==='xlsx'||ext==='xls') return await parseXLSX(file);
+  if(ext==='zip') return await parseZIP(file);
+  return [];
+}
+function parseCSV(f){return new Promise(r=>{Papa.parse(f,{complete:res=>r(res.data.filter(row=>row.some(c=>c))),skipEmptyLines:true});});}
+function parseXLSX(f){return new Promise(r=>{const rd=new FileReader();rd.onload=e=>{const wb=XLSX.read(e.target.result,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];r(XLSX.utils.sheet_to_json(ws,{header:1,defval:''}).filter(row=>row.some(c=>c)));};rd.readAsArrayBuffer(f);});}
+async function parseZIP(f){
+  const zip=await JSZip.loadAsync(f);const all=[];
+  for(const[name,entry] of Object.entries(zip.files)){
+    if(entry.dir)continue;const ext=name.split('.').pop().toLowerCase();
+    if(ext==='csv'||ext==='txt'){const txt=await entry.async('string');const r=Papa.parse(txt,{skipEmptyLines:true});all.push(...r.data.filter(row=>row.some(c=>c)));log(`ZIP→${name}: ${r.data.length} linhas`,'dm');}
+    else if(ext==='xlsx'){const ab=await entry.async('arraybuffer');const wb=XLSX.read(ab,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const d=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});all.push(...d.filter(r=>r.some(c=>c)));}
+  }
+  return all;
+}
+
+// ═══════════════════════════════════════════
+// AI ANALYSIS
+// ═══════════════════════════════════════════
+async function runAI(){
+  if(!files.length)return;
+  document.getElementById('btnAI').disabled=true;
+  setAiStatus('Lendo arquivos...',true);
+  aiTyping();
+
+  // Read sample from all files
+  let samples=[];
+  for(const f of files){
+    const rows=await parseRaw(f);
+    samples.push({file:f.name,rows:rows.slice(0,15),total:rows.length});
+  }
+
+  aiStopTyping();
+  aiMsg(`Recebi <strong>${files.length} arquivo(s)</strong>. Analisando a estrutura com IA agora...`,'ai');
+  aiTyping();
+  setAiStatus('Analisando com Claude...',true);
+
+  // Build prompt
+  const sampleText=samples.map(s=>{
+    const preview=s.rows.map((r,i)=>`  Linha ${i+1}: ${JSON.stringify(r)}`).join('\n');
+    return`=== ARQUIVO: ${s.file} (${s.total} linhas total) ===\nPrimeiras linhas:\n${preview}`;
+  }).join('\n\n');
+
+  const prompt=`Você é um especialista em limpeza e organização de planilhas de contatos. Analise as amostras abaixo e retorne APENAS um JSON válido, sem markdown, sem explicações extras.
+
+AMOSTRAS:
+${sampleText}
+
+Retorne EXATAMENTE este JSON:
+{
+  "hasHeader": true/false,
+  "nameCol": 0 ou 1 (índice da coluna de nome),
+  "numCol": 0 ou 1 (índice da coluna de número),
+  "separator": "," ou ";" ou "tab" ou "outro",
+  "totalRows": número total estimado de contatos,
+  "issues": ["lista de problemas encontrados"],
+  "fixSuggestions": ["lista de correções que serão aplicadas"],
+  "quality": "boa" ou "média" ou "ruim",
+  "summary": "resumo em 1-2 frases do que foi encontrado"
+}`;
+
+  try{
+    // Envia amostra para o backend (proxy Anthropic — chave fica no servidor)
+    const payload={
+      sample_rows: samples.flatMap(s=>s.rows.slice(0,15)),
+      filename: samples.map(s=>s.file).join(', '),
+      total_rows: samples.reduce((a,s)=>a+s.total,0)
+    };
+    const resp=await fetch(`${API_URL}/api/ai/analyze`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+
+    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data=await resp.json();
+    aiStopTyping();
+
+    let analysis;
+    try{
+      analysis=typeof data==='string'?JSON.parse(data):data;
+    }catch(e){
+      analysis={summary:'Análise concluída. Usando detecção automática.',issues:[],fixSuggestions:[],quality:'média',hasHeader:false,nameCol:1,numCol:1};
+    }
+
+    aiAnalysis=analysis;
+
+    // Show result in chat
+    const qualColor=analysis.quality==='boa'?'var(--g)':analysis.quality==='média'?'var(--yellow)':'var(--red)';
+    
+    let html=`<span class="msg-ico">🤖 EXCEL SPECIALIST</span>`;
+    html+=`<strong>${analysis.summary}</strong><br><br>`;
+    html+=`<div class="ai-result">`;
+    html+=`<div class="ar-title">📊 Diagnóstico</div>`;
+    html+=`<table>`;
+    html+=`<tr><td>Qualidade dos dados</td><td style="color:${qualColor}">${(analysis.quality||'').toUpperCase()}</td></tr>`;
+    html+=`<tr><td>Cabeçalho detectado</td><td>${analysis.hasHeader?'✓ SIM':'✗ NÃO'}</td></tr>`;
+    html+=`<tr><td>Coluna nome</td><td>Coluna ${(analysis.nameCol||0)+1}</td></tr>`;
+    html+=`<tr><td>Coluna número</td><td>Coluna ${(analysis.numCol||1)+1}</td></tr>`;
+    html+=`<tr><td>Total estimado</td><td>${analysis.totalRows||'?'} contatos</td></tr>`;
+    html+=`</table></div>`;
+
+    if(analysis.issues&&analysis.issues.length){
+      html+=`<br><strong style="color:var(--yellow)">⚠ Problemas encontrados:</strong><br>`;
+      html+=analysis.issues.map(i=>`• ${i}`).join('<br>');
+    }
+    if(analysis.fixSuggestions&&analysis.fixSuggestions.length){
+      html+=`<br><br><strong style="color:var(--g)">✓ Correções que serão aplicadas:</strong><br>`;
+      html+=analysis.fixSuggestions.map(s=>`• ${s}`).join('<br>');
+    }
+    html+=`<br><br>Tudo pronto! Clique em <strong>▶ PROCESSAR</strong> para executar.`;
+
+    aiMsg(html,'ai');
+    setAiStatus('Análise concluída ✓',false);
+    log('IA concluiu análise da planilha','ai');
+
+  }catch(e){
+    aiStopTyping();
+    aiMsg(`Erro na análise: ${e.message}. Processamento manual ainda funciona normalmente.`,'ai');
+    setAiStatus('Erro na análise','');
+    log('Erro na análise IA: '+e.message,'er');
+  }
+
+  document.getElementById('btnAI').disabled=false;
+}
+
+// ═══════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════
+function rmEmoji(s){return s.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u2764\uFE0F]/gu,'').trim();}
+function fix55(num){const d=String(num).replace(/\D/g,'');if(!d)return num;if((d.length===10||d.length===11)&&!d.startsWith('55'))return'55'+d;return d;}
+function valNum(num){
+  const s=String(num),d=s.replace(/\D/g,''),issues=[];
+  if(!d){issues.push('vazio');return issues;}
+  if(/[a-zA-Z]/.test(s))issues.push('contém letras');
+  if(d.length<10||d.length>13)issues.push(`${d.length} dígitos`);
+  else if(!d.startsWith('55'))issues.push('sem código 55');
+  return issues;
+}
+
+// ═══════════════════════════════════════════
+// PROCESS — envia arquivos para o backend
+// ═══════════════════════════════════════════
+async function processFiles(){
+  clrLog();contacts=[];currentSessionId=null;
+  document.getElementById('btnDL').style.display='none';
+  document.getElementById('btnPV').style.display='none';
+  document.getElementById('pgw').style.display='block';
+  document.getElementById('btnProc').disabled=true;
+  try{await _run();}
+  catch(e){log('ERRO: '+e.message,'er');console.error(e);document.getElementById('btnProc').disabled=false;}
+}
+
+async function _run(){
+  log('Enviando arquivos para o servidor...','in');
+  setProg(10,'Enviando arquivos...','');
+
+  const fd=new FormData();
+  for(const f of files) fd.append('files',f);
+  fd.append('emoji',opts.emoji);
+  fd.append('dup',opts.dup);
+  fd.append('val',opts.val);
+  fd.append('fix55',opts.fix55);
+  fd.append('fixc',opts.fixc);
+  fd.append('chunk_size',parseInt(document.getElementById('splitSize').value)||49);
+
+  setProg(30,'Processando no servidor...');
+  log(`Enviando ${files.length} arquivo(s)...`,'dm');
+
+  const resp=await fetch(`${API_URL}/api/upload`,{method:'POST',body:fd});
+  if(!resp.ok){
+    const err=await resp.json().catch(()=>({detail:'Erro desconhecido'}));
+    throw new Error(err.detail||`HTTP ${resp.status}`);
+  }
+
+  setProg(75,'Recebendo resultado...');
+  const data=await resp.json();
+
+  currentSessionId=data.session_id;
+  contacts=data.contacts;
+
+  const valid=data.total_valid;
+  const warns=data.total_warn;
+  const errs=data.total_err;
+  const dupCount=data.duplicates_removed;
+  const globalDups=data.duplicates_global;
+  const chunks=data.chunks;
+
+  animS('sTot',data.total_raw);
+  animS('sVal',valid);
+  animS('sDup',dupCount);
+  animS('sErr',errs+warns);
+  animS('sFiles',chunks);
+  animS('sFinal',valid);
+
+  log(`✓ Válidos: ${valid}`,'ok');
+  if(warns>0)log(`⚠ Avisos: ${warns}`,'wn');
+  if(errs>0)log(`✗ Inválidos: ${errs}`,'er');
+  if(dupCount>0)log(`Duplicados removidos (sessão): ${dupCount}`,'wn');
+  if(globalDups>0)log(`Duplicados de sessões anteriores: ${globalDups}`,'wn');
+  log(`ZIP gerado: ${chunks} arquivo(s) no servidor`,'ok');
+
+  setProg(100,'✓ Concluído!');
+  document.getElementById('btnDL').style.display='';
+  document.getElementById('btnPV').style.display='';
+  document.getElementById('btnProc').disabled=false;
+
+  if(aiAnalysis){
+    aiMsg(`Processamento concluído! <strong>${valid} contatos válidos</strong> em <strong>${chunks} arquivos</strong>. ${dupCount>0?`Removi ${dupCount} duplicados. `:''}${(errs+warns)>0?`${errs+warns} com problemas separados.`:''} ZIP salvo no servidor!`,'ai');
+  }
+
+  renderPrev();
+}
+
+// ═══════════════════════════════════════════
+// DOWNLOAD — baixa do servidor
+// ═══════════════════════════════════════════
+function dlZip(){
+  if(!currentSessionId){log('Nenhum ZIP disponível. Processe os arquivos primeiro.','wn');return;}
+  window.open(`${API_URL}/api/sessions/${currentSessionId}/download`,'_blank');
+  log('Download iniciado do servidor!','ok');
+}
+
+// ═══════════════════════════════════════════
+// PREVIEW
+// ═══════════════════════════════════════════
+function renderPrev(){
+  const v=contacts.filter(c=>c.status==='valid').length;
+  const w=contacts.filter(c=>c.status==='warn').length;
+  const e=contacts.filter(c=>c.status==='err').length;
+  document.getElementById('pmeta').innerHTML=`<span>${contacts.length} contatos</span><span style="color:var(--g)">✓ ${v}</span><span style="color:var(--yellow)">⚠ ${w}</span><span style="color:var(--red)">✗ ${e}</span>`;
+  filterPrev();
+}
+function filterPrev(){
+  const q=document.getElementById('srch').value.toLowerCase();
+  const f=contacts.filter(c=>{
+    if(!filters[c.status])return false;
+    if(q&&!c.nome.toLowerCase().includes(q)&&!c.numero.includes(q))return false;
+    return true;
+  });
+  const bdg={valid:'<span class="bdg bok">✓ VÁLIDO</span>',warn:'<span class="bdg bwn">⚠ AVISO</span>',err:'<span class="bdg ber">✗ INVÁLIDO</span>'};
+  const tbody=document.getElementById('ptbody');
+  if(!f.length){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--dim);padding:20px">Sem resultados</td></tr>';return;}
+  tbody.innerHTML=f.slice(0,500).map((c,i)=>`<tr><td style="color:var(--dim)">${i+1}</td><td>${esc(c.nome)}</td><td style="font-size:10px">${c.numero}</td><td>${bdg[c.status]}${c.issues.length?` <span style="font-size:8px;color:var(--dim)">${c.issues.join(', ')}</span>`:''}</td><td style="color:var(--dim);font-size:9px">${esc(c.file)}</td></tr>`).join('');
+  if(f.length>500)tbody.innerHTML+=`<tr><td colspan="5" style="text-align:center;color:var(--dim);padding:8px;font-size:9px">mostrando 500 de ${f.length}. Use a busca para filtrar.</td></tr>`;
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function clearPrev(){contacts=[];document.getElementById('ptbody').innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--dim);padding:30px">Limpo</td></tr>';document.getElementById('pmeta').textContent='Nenhum dado.';}
+
+// ═══════════════════════════════════════════
+// HISTORY — carrega do banco de dados
+// ═══════════════════════════════════════════
+async function renderHist(){
+  const el=document.getElementById('histBody');
+  el.innerHTML='<div class="hi-empty">Carregando...</div>';
+  try{
+    const resp=await fetch(`${API_URL}/api/sessions?limit=50`);
+    if(!resp.ok) throw new Error('Erro ao carregar histórico');
+    const sessions=await resp.json();
+    if(!sessions.length){el.innerHTML='<div class="hi-empty">📋 Nenhum processamento registrado ainda.</div>';return;}
+    el.innerHTML=sessions.map(x=>{
+      const chunks=x.chunks||0;
+      const files=(x.filenames||[]).join(', ');
+      const date=new Date(x.created_at).toLocaleString('pt-BR');
+      return`<div class="hi"><div class="hi-hdr"><span class="hi-dt">${date}</span><span class="hi-ttl">${files}</span><span class="bdg bok">${chunks} arquivos</span><button class="btn btn-sm btn-red" style="font-size:8px;padding:2px 6px" onclick="deleteSession(${x.id},this)">✕</button></div><div class="hi-sts"><div class="hi-st">Total: <span>${x.total_raw}</span></div><div class="hi-st">Válidos: <span style="color:var(--g)">${x.total_valid}</span></div><div class="hi-st">Duplicados: <span style="color:var(--yellow)">${x.duplicates_removed}</span></div><div class="hi-st">Inválidos: <span style="color:var(--red)">${x.total_err+x.total_warn}</span></div></div>${x.id?`<div style="margin-top:6px"><a href="${API_URL}/api/sessions/${x.id}/download" target="_blank" style="font-size:9px;color:var(--cyan)">⬇ Baixar ZIP</a></div>`:''}</div>`;
+    }).join('');
+  }catch(e){
+    el.innerHTML=`<div class="hi-empty">Erro ao carregar: ${e.message}</div>`;
+  }
+}
+async function deleteSession(id,btn){
+  if(!confirm('Excluir esta sessão?'))return;
+  btn.closest('.hi').style.opacity='0.4';
+  await fetch(`${API_URL}/api/sessions/${id}`,{method:'DELETE'});
+  btn.closest('.hi').remove();
+}
+function clearHist(){if(confirm('Isso remove todas as sessões visíveis. Continue?')){renderHist();}}
+
+// ═══════════════════════════════════════════
+// DEEP LEARNING ENGINE — dados vêm do banco
+// ═══════════════════════════════════════════
+async function renderDLStats(){
+  try{
+    const resp=await fetch(`${API_URL}/api/ml/stats`);
+    if(!resp.ok) throw new Error('Erro ao carregar ML stats');
+    const mem=await resp.json();
+
+    const patterns=Object.keys(mem.patterns||{}).length;
+    const sessions=mem.total_sessions||0;
+    const fixes=(mem.fixes_comma||0)+(mem.fixes_emoji||0)+(mem.fixes_dup||0)+(mem.fixes_fix55||0)+(mem.fixes_header||0);
+    const acc=mem.total_processed>0?Math.round((mem.total_valid/mem.total_processed)*100):0;
+
+    document.getElementById('dlPatterns').textContent=patterns;
+    document.getElementById('dlSessions').textContent=sessions;
+    document.getElementById('dlFixes').textContent=fixes;
+    document.getElementById('dlAccuracy').textContent=acc+'%';
+
+    const sorted=Object.entries(mem.patterns||{}).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    document.getElementById('dlPatternList').innerHTML=sorted.length?sorted.map(([p,c])=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:3px;font-size:10px">
+        <span style="color:var(--cyan);font-family:Orbitron,monospace">${p}...</span>
+        <div style="flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden">
+          <div style="height:100%;background:var(--g);width:${Math.min(100,c*5)}%;box-shadow:0 0 4px var(--g)"></div>
+        </div>
+        <span style="color:var(--dim)">${c}x</span>
+      </div>`).join(''):'<div style="color:var(--dim);font-size:10px;text-align:center;padding:20px">Nenhum padrão aprendido ainda</div>';
+
+    const logEl=document.getElementById('dlLog');
+    const entries=mem.log||[];
+    logEl.innerHTML=entries.length?entries.map(e=>`<div class="ll"><span class="lt">${new Date(e.date).toLocaleString('pt-BR')}</span><span class="lai">${e.msg}</span></div>`).join(''):'<div class="ll"><span class="ldm">Nenhum log ainda</span></div>';
+  }catch(e){
+    document.getElementById('dlPatterns').textContent='—';
+    console.error('renderDLStats error:',e);
+  }
+}
+
+async function runDeepAnalysis(){
+  document.getElementById('dlStatus').textContent='Carregando dados...';
+  document.getElementById('dlStatus').className='ai-status thinking';
+
+  const chat=document.getElementById('dlChat');
+  const typing=document.createElement('div');typing.className='typing-indicator';typing.id='dlTyping';
+  typing.innerHTML='<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  chat.appendChild(typing);chat.scrollTop=chat.scrollHeight;
+
+  try{
+    const statsResp=await fetch(`${API_URL}/api/ml/stats`);
+    if(!statsResp.ok) throw new Error('Erro ao carregar stats');
+    const stats=await statsResp.json();
+
+    if((stats.total_sessions||0)===0){
+      typing.remove();
+      const d=document.createElement('div');d.className='msg msg-ai';
+      d.innerHTML='<span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>Ainda não há dados suficientes. Processe pelo menos um arquivo primeiro!';
+      chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
+      document.getElementById('dlStatus').textContent='Aguardando dados';
+      document.getElementById('dlStatus').className='ai-status';
+      return;
+    }
+
+    document.getElementById('dlStatus').textContent='Analisando com IA...';
+
+    const resp=await fetch(`${API_URL}/api/ai/deep`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({stats,history:[]})
+    });
+    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data=await resp.json();
+    typing.remove();
+
+    const text=data.analysis||'Análise concluída.';
+    const d=document.createElement('div');d.className='msg msg-ai';
+    d.innerHTML=`<span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>${text.split('\n').join('<br>')}`;
+    chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
+
+    renderDLStats();
+    document.getElementById('dlStatus').textContent='Treinamento concluído ✓';
+    document.getElementById('dlStatus').className='ai-status';
+  }catch(e){
+    typing.remove();
+    const d=document.createElement('div');d.className='msg msg-ai';
+    d.innerHTML=`<span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>Erro: ${e.message}`;
+    chat.appendChild(d);
+    document.getElementById('dlStatus').textContent='Erro no treinamento';
+    document.getElementById('dlStatus').className='ai-status';
+  }
+}
+
+async function clearMemory(){
+  if(confirm('Resetar toda a memória de aprendizado? O sistema voltará ao zero.')){
+    await fetch(`${API_URL}/api/ml/reset`,{method:'DELETE'});
+    renderDLStats();
+    const chat=document.getElementById('dlChat');
+    const d=document.createElement('div');d.className='msg msg-sys';
+    d.textContent='Memória resetada.';
+    chat.appendChild(d);
+  }
+}
+
+// Abrir tab de aprendizado carrega stats do banco
+const _goTabBase=goTab;
+goTab=function(id){
+  _goTabBase(id);
+  if(id==='learn') renderDLStats();
+  if(id==='hist') renderHist();
+};
+
+</script>
+
+<!-- ══ TAB: DEEP LEARNING ══ -->
+<div class="tc" id="tab-learn">
+<div class="wrap">
+  <div class="g2">
+    <div class="pnl">
+      <div class="ph">🧠 Memória de Aprendizado<div class="ph-r"><button class="btn btn-sm btn-red" onclick="clearMemory()">✕ RESETAR</button></div></div>
+      <div class="pb">
+        <div style="font-size:10px;color:var(--dim);margin-bottom:14px;line-height:1.8">
+          O sistema aprende com cada processamento. Quanto mais você usar, mais inteligente fica na detecção de padrões, formatos de número e estruturas de planilha.
+        </div>
+        <div class="sg" style="grid-template-columns:repeat(2,1fr)">
+          <div class="st i"><span class="sv" id="dlPatterns">0</span><span class="sl">Padrões Aprendidos</span></div>
+          <div class="st"><span class="sv" id="dlSessions">0</span><span class="sl">Sessões Treinadas</span></div>
+          <div class="st w"><span class="sv" id="dlFixes">0</span><span class="sl">Correções Memorizadas</span></div>
+          <div class="st"><span class="sv" id="dlAccuracy">0%</span><span class="sl">Taxa de Acerto</span></div>
+        </div>
+        <div class="mt">
+          <label class="lbl">Padrões de número reconhecidos</label>
+          <div id="dlPatternList" style="margin-top:8px;display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto"></div>
+        </div>
+      </div>
+    </div>
+    <div class="pnl">
+      <div class="ph">📈 Histórico de Aprendizado</div>
+      <div class="pb">
+        <div class="term" id="dlLog" style="max-height:340px">
+          <div class="ll"><span class="ldm">Nenhum aprendizado registrado ainda...</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="ai-panel fw">
+      <div class="ai-header">
+        <div class="ai-avatar">🧠</div>
+        <div class="ai-info">
+          <div class="ai-name">DEEP · LEARNING · ENGINE</div>
+          <div class="ai-status" id="dlStatus">Pronto para aprender</div>
+        </div>
+        <div class="ph-r">
+          <button class="btn btn-sm btn-ai" onclick="runDeepAnalysis()">🧠 TREINAR AGORA</button>
+        </div>
+      </div>
+      <div class="ai-chat" id="dlChat">
+        <div class="msg msg-ai">
+          <span class="msg-ico">🧠 DEEP LEARNING ENGINE</span>
+          Sou o motor de aprendizado profundo. Analiso o histórico dos seus processamentos anteriores, identifico padrões recorrentes de formatação, aprendo quais tipos de erros aparecem mais e otimizo automaticamente as regras de limpeza para os seus arquivos específicos.<br><br>
+          Quanto mais processamentos você fizer, mais preciso fico. Clique em <strong>🧠 TREINAR AGORA</strong> para que eu analise todo o histórico disponível.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+</body>
+</html>
