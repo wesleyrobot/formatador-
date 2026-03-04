@@ -1,6 +1,13 @@
 [build]
   publish = "."
 
+# Proxy /api/* → Render backend (elimina CORS completamente)
+[[redirects]]
+  from = "/api/*"
+  to = "https://formatador.onrender.com/api/:splat"
+  status = 200
+  force = true
+
 [[redirects]]
   from = "/*"
   to = "/ContactProcessor_v3.html"
