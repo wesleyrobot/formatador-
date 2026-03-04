@@ -1,0 +1,21 @@
+name: contactprocessor-api
+services:
+  - name: api
+    type: web
+    buildpack: docker
+    dockerfile: Dockerfile
+    ports:
+      - port: 8000
+        protocol: http
+    env:
+      - key: DATABASE_URL
+        secret: true
+      - key: GEMINI_API_KEY
+        secret: true
+      - key: ALLOWED_ORIGINS
+        value: "*"
+      - key: STORAGE_DIR
+        value: /tmp/contactprocessor_zips
+    health_checks:
+      - path: /health
+        port: 8000
