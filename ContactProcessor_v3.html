@@ -1706,14 +1706,20 @@ async function chatSend(){
       body:JSON.stringify({messages:chatHistory})
     });
     document.getElementById('chatTypingRow')?.remove();
-    if(!resp.ok)throw new Error(`HTTP ${resp.status}`);
+    if(resp.status===429){
+      chatHistory.pop(); // remove a mensagem do histórico para reenvio
+      _chatAddMsg('assistant','<span style="color:var(--yellow)">⏱ Limite de requisições do Gemini atingido (plano gratuito: 15/min).<br>Aguarde <strong>1 minuto</strong> e envie novamente.</span>');
+      btn.disabled=false;inp.focus();return;
+    }
+    if(!resp.ok){const err=await resp.json().catch(()=>({}));throw new Error(err.detail||`HTTP ${resp.status}`);}
     const data=await resp.json();
     const reply=data.reply||'Sem resposta.';
     chatHistory.push({role:'assistant',content:reply});
     _chatAddMsg('assistant',_mdToHtml(reply));
   }catch(e){
     document.getElementById('chatTypingRow')?.remove();
-    _chatAddMsg('assistant',`<span style="color:var(--red)">Erro ao conectar com a IA: ${e.message}.<br>Verifique se o backend está online.</span>`);
+    const isFetch=e.message==='Failed to fetch';
+    _chatAddMsg('assistant',`<span style="color:var(--red)">${isFetch?'Backend dormindo — aguarde 30s e tente novamente (Render free tier)':e.message}</span>`);
   }
 
   btn.disabled=false;
